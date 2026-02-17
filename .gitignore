@@ -35,3 +35,15 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### 추가 ###
+# 환경 설정 파일 (DB 비밀번호 등 민감 정보)
+src/main/resources/application.yml
+src/main/resources/application-local.yml
+
+# Mac OS
+.DS_Store
+
+# 로그 파일
+*.log
+logs/
