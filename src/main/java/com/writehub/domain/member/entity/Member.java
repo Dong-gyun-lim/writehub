@@ -1,6 +1,6 @@
-package com.writehub.writehub.domain.member.entity;
+package com.writehub.domain.member.entity;
 
-import com.writehub.writehub.global.common.BaseTimeEntity;
+import com.writehub.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.AccessLevel;

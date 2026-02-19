@@ -1,4 +1,4 @@
-package com.writehub.writehub.global.common;
+package com.writehub.global.common;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -17,9 +17,9 @@ public class BaseTimeEntity {
 
     @CreatedDate
     @Column(updatable = false)
-    private LocalDateTime createdDate;
+    private LocalDateTime createdAt;
 
     @LastModifiedDate
-    private LocalDateTime lastModifiedDate;
+    private LocalDateTime updatedAt;
 
 }
