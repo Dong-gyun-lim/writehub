@@ -4,7 +4,7 @@
 
 ## 📋 프로젝트 개요
 
-**개발 기간**: 2025.02.17 ~ 2025.02.22 (약 6일)  
+**개발 기간**: 2025.02.17 ~ 2025.02.21 (약 5일)  
 **개발 인원**: 1인 (백엔드)
 
 **기획 의도**:
@@ -16,12 +16,12 @@
 
 ## 🎯 핵심 기능
 
-### MVP (v1.0)
+### MVP (v1.0) - 완료
 - ✅ 회원 가입/로그인 (세션 기반)
 - ✅ 게시글 CRUD
 - ✅ 게시글 공개 범위 설정 (전체/구독자)
-- 🔄 팔로우/언팔로우 (진행 예정)
-- 🔄 무료 구독 (진행 예정)
+- ✅ 팔로우/언팔로우
+- ✅ 무료 구독/구독 취소
 - ✅ 태그 기능
 - ✅ 조회수 기능
 
@@ -46,10 +46,6 @@
 ### Authentication
 - BCrypt 비밀번호 암호화
 - 세션 기반 인증
-
-### Test
-- JUnit5 (예정)
-- Mockito (예정)
 
 ---
 
@@ -82,11 +78,11 @@ Post (N) ──< (N) Tag (PostTag 중간 테이블)
 ```
 com.writehub
 ├── domain
-│   ├── member (DTO, Service, Controller 완료)
-│   ├── post (DTO, Service, Controller 완료)
-│   ├── follow
-│   ├── subscription
-│   └── tag
+│   ├── member (완료)
+│   ├── post (완료)
+│   ├── follow (완료)
+│   ├── subscription (완료)
+│   └── tag (완료)
 └── global
     ├── common/BaseTimeEntity.java
     ├── config/
@@ -119,13 +115,29 @@ com.writehub
 | DELETE | /api/posts/{postId} | 게시글 삭제 | O |
 | GET | /api/members/{memberId}/posts | 특정 회원 게시글 | - |
 
+### 팔로우 (Follow)
+
+| Method | URL | 설명 | 인증 |
+|--------|-----|------|------|
+| POST | /api/members/{followingId}/follow | 팔로우 | O |
+| DELETE | /api/members/{followingId}/follow | 언팔로우 | O |
+| GET | /api/members/{memberId}/following | 팔로잉 목록 | - |
+| GET | /api/members/{memberId}/followers | 팔로워 목록 | - |
+
+### 구독 (Subscription)
+
+| Method | URL | 설명 | 인증 |
+|--------|-----|------|------|
+| POST | /api/members/{creatorId}/subscribe | 구독 | O |
+| DELETE | /api/members/{creatorId}/subscribe | 구독 취소 | O |
+| GET | /api/members/{memberId}/subscriptions | 구독 목록 | - |
+| GET | /api/members/{creatorId}/subscribers | 구독자 목록 | - |
+
 ---
 
 ## 💡 기술적 의사결정
 
 ### 1. 게시글 태그 수정 전략
-
-**상황**: 게시글 수정 시 태그를 어떻게 업데이트할 것인가?
 
 **선택**: 전체 삭제 후 재생성 + 변경 감지
 
@@ -134,7 +146,7 @@ com.writehub
 - 코드 가독성과 유지보수성 우선
 - 변경 감지로 불필요한 재생성 방지
 
-**개선 사항**:
+**코드**:
 ```java
 Set<String> currentTagSet = new HashSet<>(currentTags);
 Set<String> newTagSet = new HashSet<>(newTags);
@@ -156,10 +168,6 @@ if (!currentTagSet.equals(newTagSet)) {
 - BCrypt는 업계 표준 암호화
 - 설정이 간단하고 안정적
 
-**트레이드오프**:
-- 장점: 빠른 개발, 안정적
-- 단점: Stateful, 확장성 제한
-
 **향후 개선**: Spring Security + JWT 전환
 
 ---
@@ -171,13 +179,11 @@ if (!currentTagSet.equals(newTagSet)) {
 **이유**:
 - RESTful API 설계 (201 Created, 204 No Content)
 - 응답 의도 명확
-- 확장성 (헤더 추가, 에러 응답 커스터마이징)
+- 확장성
 
 ---
 
 ### 4. 게시글 목록 조회 N+1 문제
-
-**상황**: 게시글 목록 조회 시 각 게시글마다 태그 조회 쿼리 발생
 
 **선택**: 현재 상태 유지 (N+1 허용)
 
@@ -186,22 +192,18 @@ if (!currentTagSet.equals(newTagSet)) {
 - 조기 최적화 방지
 - 실제 병목 확인 전까지 단순한 코드 유지
 
-**향후 개선**: 일괄 조회로 최적화 (쿼리 2개)
+**향후 개선**: 일괄 조회로 최적화
 
 ---
 
 ### 5. 프로필 조회 Count 쿼리
 
-**상황**: 회원 프로필 조회 시 5개 쿼리 발생
-
-**선택**: 현재 상태 유지
+**선택**: 실시간 COUNT 쿼리
 
 **이유**:
 - 프로필 조회 빈도가 높지 않음
 - 항상 최신 데이터 반영
 - 코드 복잡도 최소화
-
-**향후 개선**: Redis 캐싱 도입
 
 ---
 
@@ -214,10 +216,6 @@ if (!currentTagSet.equals(newTagSet)) {
 - 실시간 반영
 - 블로그 조회수는 대략적인 수치면 충분
 
-**트레이드오프**:
-- 장점: 빠른 구현
-- 단점: 새로고침 시 증가
-
 **향후 개선**: Redis + 배치 처리
 
 ---
@@ -229,16 +227,6 @@ if (!currentTagSet.equals(newTagSet)) {
 **이유**:
 - 유료 블로그 플랫폼 특성
 - 팔로우는 알림용, 구독은 콘텐츠 접근 권한
-```java
-if (post.getVisibility() == Visibility.SUBSCRIBER_ONLY) {
-    if (viewerId == null) {
-        throw new RuntimeException("구독자만 볼 수 있습니다");
-    }
-    if (!isAuthorOrSubscriber) {
-        throw new RuntimeException("구독자만 볼 수 있습니다");
-    }
-}
-```
 
 ---
 
@@ -247,12 +235,6 @@ if (post.getVisibility() == Visibility.SUBSCRIBER_ONLY) {
 ### 1. 게시글 수정 시 태그 반환값 오류
 
 **문제점**: 태그를 수정하지 않았는데 응답에서 태그가 사라짐
-
-**원인**:
-```java
-List<String> newTags = request.getTags() != null ? request.getTags() : List.of();
-return new PostResponse(post, newTags);  // 빈 리스트 반환!
-```
 
 **해결**:
 ```java
@@ -266,15 +248,11 @@ return new PostResponse(post,
 
 ### 2. 태그 순서 변경 시 불필요한 재생성
 
-**문제**: 순서만 바뀌어도 삭제/재생성 실행
-
 **해결**: Set 비교로 순서 무시
 ```java
 Set<String> currentTagSet = new HashSet<>(currentTags);
 Set<String> newTagSet = new HashSet<>(newTags);
 ```
-
-**배운 점**: 비즈니스 요구사항에 맞는 자료구조 선택 중요
 
 ---
 
@@ -301,19 +279,21 @@ spring:
 
 ---
 
-## 📝 진행 상황
+## 📝 완료 현황
 
-### 완료 (65~70%)
-- [x] 프로젝트 설계
+### 완료 (100%)
+- [x] 프로젝트 설계 (ERD, API 명세)
 - [x] 엔티티/Repository 작성
-- [x] Member 도메인 (완료)
-- [x] Post 도메인 (완료)
+- [x] Member 도메인 (DTO, Service, Controller)
+- [x] Post 도메인 (DTO, Service, Controller)
+- [x] Follow 도메인 (DTO, Service, Controller)
+- [x] Subscription 도메인 (DTO, Service, Controller)
 
-### 진행 예정
-- [ ] Follow 도메인
-- [ ] Subscription 도메인
-- [ ] 전역 예외 처리
-- [ ] 테스트 코드
+### 개선 예정
+- [ ] 전역 예외 처리 (GlobalExceptionHandler)
+- [ ] 인증 체크 공통화 (ArgumentResolver)
+- [ ] 세션 키 상수화
+- [ ] 테스트 코드 작성
 
 ---
 
@@ -327,12 +307,12 @@ spring:
 ### 중기 (v1.5)
 - N+1 문제 최적화
 - 조회수 시스템 개선 (Redis)
-- Visibility enum 리팩토링
+- Visibility enum 리팩토링 (FOLLOWER_ONLY → SUBSCRIBER_ONLY)
 
 ### 장기 (v2.0)
 - Spring Security + JWT
 - 성능 최적화 (Redis 캐싱, Querydsl)
-- 추가 기능 (좋아요, 댓글, 결제)
+- 추가 기능 (좋아요, 댓글, 유료 구독, 결제)
 
 ---
 
@@ -347,4 +327,5 @@ spring:
 ## 👤 개발자
 
 **임동균**  
-이메일: sfeagle130@naver.com;
+이메일: sfeagle130@naver.com
+노션 포트폴리오: --
