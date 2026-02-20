@@ -1,13 +1,11 @@
-package com.writehub.writehub.domain.post.entity;
+package com.writehub.domain.post.entity;
 
-import com.writehub.writehub.domain.member.entity.Member;
-import com.writehub.writehub.global.common.BaseTimeEntity;
+import com.writehub.domain.member.entity.Member;
+import com.writehub.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import javax.swing.text.StringContent;
 
 @Entity
 @Getter
@@ -57,7 +55,5 @@ public class Post extends BaseTimeEntity {
         this.content = content;
         this.visibility = visibility;
     }
-
-
 
 }
