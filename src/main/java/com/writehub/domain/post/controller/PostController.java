@@ -95,7 +95,7 @@ public class PostController {
         if (authorId == null) {
             throw new RuntimeException("로그인이 필요합니다");
         }
-        postService.deletePost(authorId, postId);
+        postService.deletePost(postId,authorId);
         return ResponseEntity.noContent().build();
     }
 

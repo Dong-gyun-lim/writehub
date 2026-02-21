@@ -17,8 +17,10 @@ import com.writehub.domain.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
 import java.util.List;
@@ -97,12 +99,15 @@ public class PostService {
             if(!post.getAuthor().getId().equals(viewerId) &&
                     !subscriptionRepository.existsBySubscriberIdAndCreatorId(viewerId, post.getAuthor().getId())
             ) {
-                throw new RuntimeException("구독자만 볼 수 있는 게시글입니다");
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "구독자만 볼 수 있는 게시글입니다");
             }
         }
 
         // 3. 조회수 증가
-        post.increaseViewCount();
+        if(viewerId == null || !post.getAuthor().getId().equals(viewerId)) {
+            post.increaseViewCount();
+        }
 
         // 4. 태그 조회
         List<String> tags = postTagRepository.findByPostId(postId).stream()
@@ -144,6 +149,7 @@ public class PostService {
 
             if (!currentTagSet.equals(newTagSet)) {
                 postTagRepository.deleteByPostId(postId);
+                postTagRepository.flush();
                 saveTags(post, newTags);
                 return new PostResponse(post, newTags);
             }
@@ -166,7 +172,10 @@ public class PostService {
             throw new RuntimeException("본인의 게시글만 삭제할 수 있습니다");
         }
 
-        // 3. 게시글 삭제 (PostTag도 자동 삭제)
+        // 3. PostTag 먼저 삭제
+        postTagRepository.deleteByPostId(postId);
+
+        // 4. 게시글 삭제
         postRepository.delete(post);
     }
 
