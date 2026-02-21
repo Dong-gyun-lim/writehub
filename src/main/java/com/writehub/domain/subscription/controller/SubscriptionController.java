@@ -34,7 +34,7 @@ public class SubscriptionController {
             throw new RuntimeException("로그인이 필요합니다");
         }
 
-        SubscriptionResponse response = subscriptionService.subscribe(creatorId, subscriberId);
+        SubscriptionResponse response = subscriptionService.subscribe(subscriberId, creatorId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

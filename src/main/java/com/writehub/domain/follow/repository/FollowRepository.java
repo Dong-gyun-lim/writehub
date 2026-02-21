@@ -13,7 +13,7 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     boolean existsByFollowerIdAndFollowingId(Long followerId, Long followingId);
 
     // 팔로우 관계 찾기
-    Optional<Follow> findByFollowerIdANDFollowingId(Long followerId, Long followingId);
+    Optional<Follow> findByFollowerIdAndFollowingId(Long followerId, Long followingId);
 
     // 사용자가 팔로우한 작가 목록
     Page<Follow> findByFollowerId(Long followerId, Pageable pageable);

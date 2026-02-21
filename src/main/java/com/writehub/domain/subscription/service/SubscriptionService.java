@@ -62,7 +62,7 @@ public class SubscriptionService {
         // 2. 구독 삭제
         subscriptionRepository.delete(subscription);
 
-        return new SubscriptionResponse(subscription.getId(), subscriberId, creatorId);
+        return new SubscriptionResponse(subscriberId, creatorId);
     }
 
     /**

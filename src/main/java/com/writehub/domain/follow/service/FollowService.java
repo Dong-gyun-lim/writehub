@@ -56,7 +56,7 @@ public class FollowService {
     @Transactional
     public FollowResponse unfollow(Long followerId, Long followingId) {
         // 1. 팔로우 관계 조회
-        Follow follow = followRepository.findByFollowerIdANDFollowingId(followerId, followingId)
+        Follow follow = followRepository.findByFollowerIdAndFollowingId(followerId, followingId)
                 .orElseThrow(() -> new RuntimeException("팔로우 관계가 존재하지 않습니다"));
 
         // 2. 팔로우 삭제
