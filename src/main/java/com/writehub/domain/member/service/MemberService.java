@@ -9,6 +9,8 @@ import com.writehub.domain.subscription.repository.SubscriptionRepository;
 import com.writehub.global.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -109,4 +111,13 @@ public class MemberService {
                 subscriberCount
         );
     }
+
+    /**
+     * 전체 회원 목록 조회(페이징)
+     */
+    public Page<MemberResponse> getMemberList(Pageable pageable) {
+        Page<Member> members = memberRepository.findAll(pageable);
+        return members.map(MemberResponse::new);
+    }
+
 }

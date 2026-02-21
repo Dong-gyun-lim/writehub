@@ -19,7 +19,7 @@ public class SignupRequest {
     private String password;
 
     @NotBlank(message = "이름은 필수입니다")
-    @Size(min = 50, message = "이름은 50자를 초과할 수 없습니다")
+    @Size(max = 50, message = "이름은 50자를 초과할 수 없습니다")
     private String username;
 
     private String bio;

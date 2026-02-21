@@ -5,6 +5,10 @@ import com.writehub.domain.member.service.MemberService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +23,7 @@ public class MemberController {
     /**
      * 회원가입
      */
-    @PostMapping("/api/members")
+    @PostMapping("/members")
     public ResponseEntity<MemberResponse> signup(@Valid @RequestBody SignupRequest request) {
         MemberResponse response = memberService.singup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -47,7 +51,7 @@ public class MemberController {
      * 내 정보 조회
      */
     @GetMapping("/members/me")
-    public ResponseEntity<MemberResponse> getMyInfo(HttpSession session) {
+    public ResponseEntity<MemberDetailResponse> getMyInfo(HttpSession session) {
         // 1. 세션에서 memberId 추출
         Long memberId = (Long) session.getAttribute("memberId");
 
@@ -57,7 +61,7 @@ public class MemberController {
         }
 
         // 3. 회원 정보 조회
-        MemberResponse response = memberService.getMyInfo(memberId);
+        MemberDetailResponse response = memberService.getMemberDetail(memberId);
         return ResponseEntity.ok(response);
     }
 
@@ -67,6 +71,16 @@ public class MemberController {
     @GetMapping("/members/{memberId}")
     public ResponseEntity<MemberDetailResponse> getMemberDetail(@PathVariable Long memberId) {
         MemberDetailResponse response = memberService.getMemberDetail(memberId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 전체 회원 목록 조회
+     */
+    @GetMapping("/members")
+    public ResponseEntity<Page<MemberResponse>> getAllMembers(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable) {
+        Page<MemberResponse> response = memberService.getMemberList(pageable);
         return ResponseEntity.ok(response);
     }
 }
