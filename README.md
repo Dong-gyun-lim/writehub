@@ -169,7 +169,7 @@ com.writehub
 ### 주요 테스트 캡쳐
 - [회원가입 성공](docs/member/회원가입.png)
 - [로그인 성공](docs/member/로그인.png)
-- [게시글 작성](docs/post/게시글_작성.png)
+- [게시글 작성](docs/post/게시글작성.png)
 - [구독자 전용 게시글 권한 체크](docs/post/구독자_게시글_조회.png)
 - [팔로우 성공](docs/follow/팔로우.png)
 - [구독 성공](docs/subscription/구독.png)
