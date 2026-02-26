@@ -163,7 +163,7 @@ com.writehub
 ## 🧪 API 테스트
 
 ### Postman Collection
-- [Postman Collection 다운로드](postman/WriteHub.postman_collection.json)
+- [Postman Collection 다운로드](postman/WriteHub API.postman_collection.json)
 - Import 후 바로 테스트 가능
 
 ### 주요 테스트 캡쳐
