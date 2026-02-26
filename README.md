@@ -172,7 +172,7 @@ com.writehub
 - [게시글 작성](docs/post/게시글작성.png)
 - [구독자 전용 게시글 권한 체크](docs/post/구독자_게시글_조회.png)
 - [팔로우 성공](docs/follow/팔로우.png)
-- [구독 성공](docs/subscription/구독.png)
+- [구독 성공](docs/Subscription/구독.png)
 
 ---
 
