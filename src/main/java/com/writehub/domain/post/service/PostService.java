@@ -14,6 +14,9 @@ import com.writehub.domain.post.repository.PostTagRepository;
 import com.writehub.domain.subscription.repository.SubscriptionRepository;
 import com.writehub.domain.tag.entity.Tag;
 import com.writehub.domain.tag.repository.TagRepository;
+import com.writehub.global.exception.ForbiddenException;
+import com.writehub.global.exception.NotFoundException;
+import com.writehub.global.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,7 +46,7 @@ public class PostService {
     @Transactional
     public PostResponse createPost(Long authorId, PostCreateRequest request) {
         // 1. 작성자 조회
-        Member author = memberRepository.findById(authorId).orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다"));
+        Member author = memberRepository.findById(authorId).orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다"));
 
         // 2. 게시글 생성
         Post post = Post.createPost(
@@ -86,21 +89,20 @@ public class PostService {
     public PostResponse getPost(Long postId, Long viewerId) {
         // 1. 게시글 조회
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다"));
 
         // 2. 공개 범위 체크
         if (post.getVisibility() == Visibility.SUBSCRIBER_ONLY) {
             // 로그인 안했으면
             if(viewerId == null) {
-                throw new RuntimeException("구독자만 볼 수 있는 게시글 입니다");
+                throw new UnauthorizedException("로그인이 필요합니다");
             }
 
             // 작성자 본인이 아니고, 구독자도 아니면
             if(!post.getAuthor().getId().equals(viewerId) &&
                     !subscriptionRepository.existsBySubscriberIdAndCreatorId(viewerId, post.getAuthor().getId())
             ) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "구독자만 볼 수 있는 게시글입니다");
+                throw new ForbiddenException("구독자만 볼 수 있는 게시글입니다");
             }
         }
 
@@ -125,11 +127,11 @@ public class PostService {
     public PostResponse updatePost(Long postId, Long authorId, PostUpdateRequest request) {
         // 1. 게시글 조회
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다"));
 
         // 2. 작성자 확인
         if (!post.getAuthor().getId().equals(authorId)) {
-            throw new RuntimeException("본인의 게시글만 수정할 수 있습니다");
+            throw new ForbiddenException("본인의 게시글만 수정할 수 있습니다");
         }
 
         // 3. 게시글 내용 수정
@@ -165,11 +167,11 @@ public class PostService {
     public void deletePost(Long postId, Long authorId) {
         // 1. 게시글 조회
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다"));
 
         // 2. 작성자 확인
         if(!post.getAuthor().getId().equals(authorId)) {
-            throw new RuntimeException("본인의 게시글만 삭제할 수 있습니다");
+            throw new ForbiddenException("본인의 게시글만 삭제할 수 있습니다");
         }
 
         // 3. PostTag 먼저 삭제

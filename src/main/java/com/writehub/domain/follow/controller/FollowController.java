@@ -3,6 +3,8 @@ package com.writehub.domain.follow.controller;
 import com.writehub.domain.follow.dto.FollowMemberResponse;
 import com.writehub.domain.follow.dto.FollowResponse;
 import com.writehub.domain.follow.service.FollowService;
+import com.writehub.global.common.SessionConst;
+import com.writehub.global.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,10 +30,10 @@ public class FollowController {
             @PathVariable() Long followingId, HttpSession session) {
 
         // 세션에서 팔로워 ID 추출
-        Long followerId = (Long) session.getAttribute("memberId");
+        Long followerId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         if (followerId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
 
         FollowResponse response = followService.follow(followerId, followingId);
@@ -46,10 +48,10 @@ public class FollowController {
             @PathVariable Long followingId, HttpSession session) {
 
         // 세션에서 팔로워 ID 추출
-        Long followerId = (Long) session.getAttribute("memberId");
+        Long followerId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         if (followerId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
 
         FollowResponse response = followService.unfollow(followerId, followingId);

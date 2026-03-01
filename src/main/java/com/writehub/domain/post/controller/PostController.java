@@ -5,6 +5,8 @@ import com.writehub.domain.post.dto.PostListResponse;
 import com.writehub.domain.post.dto.PostResponse;
 import com.writehub.domain.post.dto.PostUpdateRequest;
 import com.writehub.domain.post.service.PostService;
+import com.writehub.global.common.SessionConst;
+import com.writehub.global.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +34,10 @@ public class PostController {
             HttpSession session) {
 
         // 세션에서 작성자 ID 추출
-        Long authorId = (Long) session.getAttribute("memberId");
+        Long authorId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         if (authorId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
 
         PostResponse response = postService.createPost(authorId, request);
@@ -60,7 +62,7 @@ public class PostController {
     public ResponseEntity<PostResponse> getPost(
             @PathVariable Long postId, HttpSession session) {
         // 세션에서 viewerId 추출 (로그인 안 했으면 null)
-        Long viewerId = (Long) session.getAttribute("memberId");
+        Long viewerId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         PostResponse response = postService.getPost(postId, viewerId);
         return ResponseEntity.ok(response);
@@ -74,9 +76,9 @@ public class PostController {
             @PathVariable Long postId, @Valid @RequestBody PostUpdateRequest request, HttpSession session) {
 
         // 세션에서 작성자 ID 추출
-        Long authorId = (Long) session.getAttribute("memberId");
+        Long authorId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
         if (authorId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
 
         PostResponse response = postService.updatePost(postId, authorId, request);
@@ -91,9 +93,9 @@ public class PostController {
             @PathVariable Long postId, HttpSession session) {
 
         // 세션에서 작성자 ID 추출
-        Long authorId = (Long) session.getAttribute("memberId");
+        Long authorId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
         if (authorId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
         postService.deletePost(postId,authorId);
         return ResponseEntity.noContent().build();

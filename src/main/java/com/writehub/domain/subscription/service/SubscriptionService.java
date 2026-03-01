@@ -6,6 +6,9 @@ import com.writehub.domain.subscription.dto.SubscriptionMemberResponse;
 import com.writehub.domain.subscription.dto.SubscriptionResponse;
 import com.writehub.domain.subscription.entity.Subscription;
 import com.writehub.domain.subscription.repository.SubscriptionRepository;
+import com.writehub.global.exception.BadRequestException;
+import com.writehub.global.exception.DuplicateException;
+import com.writehub.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,19 +30,19 @@ public class SubscriptionService {
     public SubscriptionResponse subscribe(Long subscriberId, Long creatorId) {
         // 1. 자기 자신 구독 방지
         if(subscriberId.equals(creatorId)){
-            throw new RuntimeException("자기 자신은 구독할 수 없습니다");
+            throw new BadRequestException("자기 자신은 구독할 수 없습니다");
         }
 
         // 2. 회원 존재 확인
         Member subscriber = memberRepository.findById(subscriberId)
-                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다"));
 
         Member creator = memberRepository.findById(creatorId)
-                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다"));
 
         // 3. 중복 구독 방지
         if(subscriptionRepository.existsBySubscriberIdAndCreatorId(subscriberId,creatorId)){
-            throw new RuntimeException("이미 구독 중입니다");
+            throw new DuplicateException("이미 구독 중입니다");
         }
 
         // 4. 구독 생성
@@ -57,7 +60,7 @@ public class SubscriptionService {
     public SubscriptionResponse unSubscribe(Long subscriberId, Long creatorId) {
         // 1. 구독 관계 조회
         Subscription subscription = subscriptionRepository.findBySubscriberIdAndCreatorId(subscriberId, creatorId)
-                .orElseThrow(() -> new RuntimeException("구독 관계가 존재하지 않습니다"));
+                .orElseThrow(() -> new NotFoundException("구독 관계가 존재하지 않습니다"));
 
         // 2. 구독 삭제
         subscriptionRepository.delete(subscription);

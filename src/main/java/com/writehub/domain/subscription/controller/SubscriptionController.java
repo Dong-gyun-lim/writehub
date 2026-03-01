@@ -3,6 +3,8 @@ package com.writehub.domain.subscription.controller;
 import com.writehub.domain.subscription.dto.SubscriptionMemberResponse;
 import com.writehub.domain.subscription.dto.SubscriptionResponse;
 import com.writehub.domain.subscription.service.SubscriptionService;
+import com.writehub.global.common.SessionConst;
+import com.writehub.global.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
@@ -28,10 +30,10 @@ public class SubscriptionController {
     public ResponseEntity<SubscriptionResponse> subscribe(
             @PathVariable Long creatorId, HttpSession session) {
         // 1.세션에서 구독자 ID 추출
-        Long subscriberId = (Long) session.getAttribute("memberId");
+        Long subscriberId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         if (subscriberId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
 
         SubscriptionResponse response = subscriptionService.subscribe(subscriberId, creatorId);
@@ -45,10 +47,10 @@ public class SubscriptionController {
     public ResponseEntity<SubscriptionResponse> unsubscribe(
             @PathVariable Long creatorId, HttpSession session) {
         // 세션에서 구독자 ID 추출
-        Long subscriberId = (Long) session.getAttribute("memberId");
+        Long subscriberId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         if (subscriberId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
         SubscriptionResponse response = subscriptionService.unSubscribe(subscriberId, creatorId);
         return ResponseEntity.ok(response);

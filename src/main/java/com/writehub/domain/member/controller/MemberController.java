@@ -2,6 +2,8 @@ package com.writehub.domain.member.controller;
 
 import com.writehub.domain.member.dto.*;
 import com.writehub.domain.member.service.MemberService;
+import com.writehub.global.common.SessionConst;
+import com.writehub.global.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -53,11 +55,11 @@ public class MemberController {
     @GetMapping("/members/me")
     public ResponseEntity<MemberDetailResponse> getMyInfo(HttpSession session) {
         // 1. 세션에서 memberId 추출
-        Long memberId = (Long) session.getAttribute("memberId");
+        Long memberId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         // 2. 로그인 체크
         if (memberId == null) {
-            throw new RuntimeException("로그인이 필요합니다");
+            throw new UnauthorizedException("로그인이 필요합니다");
         }
 
         // 3. 회원 정보 조회

@@ -6,6 +6,10 @@ import com.writehub.domain.member.entity.Member;
 import com.writehub.domain.member.repository.MemberRepository;
 import com.writehub.domain.post.repository.PostRepository;
 import com.writehub.domain.subscription.repository.SubscriptionRepository;
+import com.writehub.global.common.SessionConst;
+import com.writehub.global.exception.DuplicateException;
+import com.writehub.global.exception.NotFoundException;
+import com.writehub.global.exception.UnauthorizedException;
 import com.writehub.global.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +35,7 @@ public class MemberService {
     public MemberResponse singup(SignupRequest request) {
         // 1. 이메일 중복 체크 todo 전역 예외 처리 만들 때 커스텀 예외처리 만들어주기
         if (memberRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("이미 존재하는 이메일입니다");
+            throw new DuplicateException("이미 존재하는 이메일입니다");
         }
 
         // 2. 비밀번호 암호화(BCrypt로 암호화)
@@ -59,15 +63,15 @@ public class MemberService {
     public LoginResponse login(LoginRequest request, HttpSession session) {
         // 1. 이메일로 회원 조회
         Member member = memberRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("이메일 또는 비밀번호가 올바르지 않습니다"));
+                .orElseThrow(() -> new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다"));
 
         // 2. 비밀번호 검증
         if (!PasswordEncoder.matches(request.getPassword(), member.getPassword())) {
-            throw new RuntimeException("이메일 또는 비밀번호가 올바르지 않습니다");
+            throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다");
         }
 
         // 3. 세션에 회원 ID 저장
-        session.setAttribute("memberId", member.getId());
+        session.setAttribute(SessionConst.MEMBER_ID, member.getId());
 
         //4. 응답 반환
         return new LoginResponse(member.getId(), member.getUsername());
@@ -94,7 +98,7 @@ public class MemberService {
     public MemberDetailResponse getMemberDetail(Long memberId) {
         // 1. 회원 조회
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다"));
 
         // 2. 통계 정보 조회
         long followerCount = followRepository.countByFollowingId(memberId);

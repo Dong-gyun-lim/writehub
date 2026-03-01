@@ -6,6 +6,9 @@ import com.writehub.domain.follow.entity.Follow;
 import com.writehub.domain.follow.repository.FollowRepository;
 import com.writehub.domain.member.entity.Member;
 import com.writehub.domain.member.repository.MemberRepository;
+import com.writehub.global.exception.BadRequestException;
+import com.writehub.global.exception.DuplicateException;
+import com.writehub.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,19 +30,19 @@ public class FollowService {
     public FollowResponse follow(Long followerId, Long followingId) {
         // 1. 자기 자신 팔로우 방지
         if(followerId.equals(followingId)){
-            throw new RuntimeException("자기 자신은 팔로워할 수 없습니다");
+            throw new BadRequestException("자기 자신은 팔로워할 수 없습니다");
         }
 
         // 2. 회원 존재 확인
         Member follower = memberRepository.findById(followerId)
-                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다"));
 
         Member following = memberRepository.findById(followingId)
-                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다"));
 
         // 3. 중복 팔로우 방지
         if (followRepository.existsByFollowerIdAndFollowingId(followerId, followingId)) {
-            throw new RuntimeException("이미 팔로우 중입니다");
+            throw new DuplicateException("이미 팔로우 중입니다");
         }
 
         // 4. 팔로우 생성
@@ -57,7 +60,7 @@ public class FollowService {
     public FollowResponse unfollow(Long followerId, Long followingId) {
         // 1. 팔로우 관계 조회
         Follow follow = followRepository.findByFollowerIdAndFollowingId(followerId, followingId)
-                .orElseThrow(() -> new RuntimeException("팔로우 관계가 존재하지 않습니다"));
+                .orElseThrow(() -> new NotFoundException("팔로우 관계가 존재하지 않습니다"));
 
         // 2. 팔로우 삭제
         followRepository.delete(follow);
