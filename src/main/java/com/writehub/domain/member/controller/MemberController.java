@@ -2,8 +2,7 @@ package com.writehub.domain.member.controller;
 
 import com.writehub.domain.member.dto.*;
 import com.writehub.domain.member.service.MemberService;
-import com.writehub.global.common.SessionConst;
-import com.writehub.global.exception.UnauthorizedException;
+import com.writehub.global.common.LoginMember;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -53,16 +52,9 @@ public class MemberController {
      * 내 정보 조회
      */
     @GetMapping("/members/me")
-    public ResponseEntity<MemberDetailResponse> getMyInfo(HttpSession session) {
-        // 1. 세션에서 memberId 추출
-        Long memberId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
+    public ResponseEntity<MemberDetailResponse> getMyInfo(@LoginMember Long memberId) {
 
-        // 2. 로그인 체크
-        if (memberId == null) {
-            throw new UnauthorizedException("로그인이 필요합니다");
-        }
-
-        // 3. 회원 정보 조회
+        // 회원 정보 조회
         MemberDetailResponse response = memberService.getMemberDetail(memberId);
         return ResponseEntity.ok(response);
     }
@@ -81,7 +73,7 @@ public class MemberController {
      */
     @GetMapping("/members")
     public ResponseEntity<Page<MemberResponse>> getAllMembers(
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<MemberResponse> response = memberService.getMemberList(pageable);
         return ResponseEntity.ok(response);
     }

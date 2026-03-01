@@ -3,9 +3,7 @@ package com.writehub.domain.follow.controller;
 import com.writehub.domain.follow.dto.FollowMemberResponse;
 import com.writehub.domain.follow.dto.FollowResponse;
 import com.writehub.domain.follow.service.FollowService;
-import com.writehub.global.common.SessionConst;
-import com.writehub.global.exception.UnauthorizedException;
-import jakarta.servlet.http.HttpSession;
+import com.writehub.global.common.LoginMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,14 +25,7 @@ public class FollowController {
      */
     @PostMapping("/members/{followingId}/follow")
     public ResponseEntity<FollowResponse> follow(
-            @PathVariable() Long followingId, HttpSession session) {
-
-        // 세션에서 팔로워 ID 추출
-        Long followerId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
-
-        if (followerId == null) {
-            throw new UnauthorizedException("로그인이 필요합니다");
-        }
+            @PathVariable() Long followingId, @LoginMember Long followerId) {
 
         FollowResponse response = followService.follow(followerId, followingId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -45,14 +36,7 @@ public class FollowController {
      */
     @DeleteMapping("/members/{followingId}/follow")
     public ResponseEntity<FollowResponse> unfollow(
-            @PathVariable Long followingId, HttpSession session) {
-
-        // 세션에서 팔로워 ID 추출
-        Long followerId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
-
-        if (followerId == null) {
-            throw new UnauthorizedException("로그인이 필요합니다");
-        }
+            @PathVariable Long followingId, @LoginMember Long followerId) {
 
         FollowResponse response = followService.unfollow(followerId, followingId);
         return ResponseEntity.ok(response);

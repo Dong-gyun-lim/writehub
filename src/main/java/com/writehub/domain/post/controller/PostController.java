@@ -5,8 +5,8 @@ import com.writehub.domain.post.dto.PostListResponse;
 import com.writehub.domain.post.dto.PostResponse;
 import com.writehub.domain.post.dto.PostUpdateRequest;
 import com.writehub.domain.post.service.PostService;
+import com.writehub.global.common.LoginMember;
 import com.writehub.global.common.SessionConst;
-import com.writehub.global.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,15 +30,7 @@ public class PostController {
      */
     @PostMapping("/posts")
     public ResponseEntity<PostResponse> createPost(
-            @Valid @RequestBody PostCreateRequest request,
-            HttpSession session) {
-
-        // 세션에서 작성자 ID 추출
-        Long authorId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
-
-        if (authorId == null) {
-            throw new UnauthorizedException("로그인이 필요합니다");
-        }
+            @Valid @RequestBody PostCreateRequest request, @LoginMember Long authorId) {
 
         PostResponse response = postService.createPost(authorId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -56,12 +48,12 @@ public class PostController {
     }
 
     /**
-     * 게시글 상세 조회
+     * 게시글 상세 조회(비로그인 허용)
      */
     @GetMapping("/posts/{postId}")
     public ResponseEntity<PostResponse> getPost(
             @PathVariable Long postId, HttpSession session) {
-        // 세션에서 viewerId 추출 (로그인 안 했으면 null)
+
         Long viewerId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
 
         PostResponse response = postService.getPost(postId, viewerId);
@@ -73,13 +65,8 @@ public class PostController {
      */
     @PutMapping("/posts/{postId}")
     public ResponseEntity<PostResponse> updatePost(
-            @PathVariable Long postId, @Valid @RequestBody PostUpdateRequest request, HttpSession session) {
-
-        // 세션에서 작성자 ID 추출
-        Long authorId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
-        if (authorId == null) {
-            throw new UnauthorizedException("로그인이 필요합니다");
-        }
+            @PathVariable Long postId, @Valid @RequestBody PostUpdateRequest request,
+            @LoginMember Long authorId) {
 
         PostResponse response = postService.updatePost(postId, authorId, request);
         return ResponseEntity.ok(response);
@@ -90,14 +77,9 @@ public class PostController {
      */
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<Void> deletePost(
-            @PathVariable Long postId, HttpSession session) {
+            @PathVariable Long postId, @LoginMember Long authorId) {
 
-        // 세션에서 작성자 ID 추출
-        Long authorId = (Long) session.getAttribute(SessionConst.MEMBER_ID);
-        if (authorId == null) {
-            throw new UnauthorizedException("로그인이 필요합니다");
-        }
-        postService.deletePost(postId,authorId);
+        postService.deletePost(postId, authorId);
         return ResponseEntity.noContent().build();
     }
 
