@@ -8,7 +8,7 @@
 **개발 인원**: 1인 (백엔드)
 
 **기획 의도**:
-- 포스타입 서비스에 관심을 가지고 비슷한 도메인의 프로젝트 진행
+- 구독 기반 콘텐츠 플랫폼의 핵심 도메인 모델링
 - Spring Boot + JPA를 활용한 실전 프로젝트 경험
 - 연관관계 매핑, 페이징 처리, N+1 문제 등 실무 기술 적용
 
@@ -79,37 +79,37 @@ Post (N) ──< (N) Tag (PostTag 중간 테이블)
 com.writehub
 ├── domain
 │   ├── member
-│   │   ├── entity/Member.java
-│   │   ├── repository/MemberRepository.java
-│   │   ├── service/MemberService.java
-│   │   ├── controller/MemberController.java
+│   │   ├── entity/
+│   │   ├── repository/
+│   │   ├── service/
+│   │   ├── controller/
 │   │   └── dto/
 │   ├── post
 │   │   ├── entity/
 │   │   ├── repository/
-│   │   ├── service/PostService.java
-│   │   ├── controller/PostController.java
+│   │   ├── service/
+│   │   ├── controller/
 │   │   └── dto/
 │   ├── follow
-│   │   ├── entity/Follow.java
-│   │   ├── repository/FollowRepository.java
-│   │   ├── service/FollowService.java
-│   │   ├── controller/FollowController.java
+│   │   ├── entity/
+│   │   ├── repository/
+│   │   ├── service/
+│   │   ├── controller/
 │   │   └── dto/
 │   ├── subscription
 │   │   ├── entity/
-│   │   ├── repository/SubscriptionRepository.java
-│   │   ├── service/SubscriptionService.java
-│   │   ├── controller/SubscriptionController.java
+│   │   ├── repository/
+│   │   ├── service/
+│   │   ├── controller/
 │   │   └── dto/
 │   └── tag
-│       ├── entity/Tag.java
-│       └── repository/TagRepository.java
+│       ├── entity/
+│       └── repository/
 └── global
-    ├── common/BaseTimeEntity.java
+    ├── common/
     ├── config/
     ├── exception/
-    └── util/PasswordEncoder.java
+    └── util/
 ```
 
 ---
@@ -169,10 +169,10 @@ com.writehub
 ### 주요 테스트 캡쳐
 - [회원가입 성공](docs/member/회원가입.png)
 - [로그인 성공](docs/member/로그인.png)
-- [게시글 작성](docs/post/게시글작성.png)
+- [게시글 작성](docs/post/게시글_작성.png)
 - [구독자 전용 게시글 권한 체크](docs/post/구독자_게시글_조회.png)
 - [팔로우 성공](docs/follow/팔로우.png)
-- [구독 성공](docs/Subscription/구독.png)
+- [구독 성공](docs/subscription/구독.png)
 
 ---
 
@@ -315,8 +315,7 @@ if (post.getVisibility() == Visibility.SUBSCRIBER_ONLY) {
     if (viewerId == null || 
         (!post.getAuthor().getId().equals(viewerId) &&
          !subscriptionRepository.exists(...))) {
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, 
-            "구독자만 볼 수 있는 게시글입니다");
+        throw new ForbiddenException("구독자만 볼 수 있는 게시글입니다");
     }
 }
 ```
@@ -530,7 +529,7 @@ public void deletePost(Long postId, Long authorId) {
     
     // 작성자 확인
     if (!post.getAuthor().getId().equals(authorId)) {
-        throw new RuntimeException("본인의 게시글만 삭제할 수 있습니다");
+        throw new ForbiddenException("본인의 게시글만 삭제할 수 있습니다");
     }
     
     // 1. PostTag 먼저 삭제 (자식)
@@ -633,6 +632,7 @@ spring:
 - [x] Subscription 도메인 (4개 API)
 - [x] Postman Collection 작성
 - [x] API 테스트 완료
+- [x] v1.1 리팩토링 (예외처리, ArgumentResolver, 세션상수화)
 
 **총 22개 API 완성**
 
@@ -640,62 +640,20 @@ spring:
 
 ## 🔜 향후 개선 계획
 
-### 단기 (v1.1)
+### 단기 v1.1 (완료)
 
 **1. 전역 예외 처리 (GlobalExceptionHandler)**
-
-**현재 문제**:
-- RuntimeException, ResponseStatusException 사용
-- 에러 메시지가 일관성 없게 반환됨
-- 클라이언트가 에러 처리하기 어려움
-
-**개선 방향**:
-```java
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException e) {
-        return ResponseEntity
-            .status(HttpStatus.UNAUTHORIZED)
-            .body(new ErrorResponse("UNAUTHORIZED", e.getMessage()));
-    }
-}
-```
+- RuntimeException, ResponseStatusException → 커스텀 예외 계층 구조로 교체
+- CustomException 기반 5가지 예외 클래스 (400/401/403/404/409)
+- GlobalExceptionHandler로 일관된 에러 응답 처리
 
 **2. 인증 체크 중복 제거 (ArgumentResolver)**
-
-**현재 문제**: Controller마다 세션 체크 반복
-```java
-Long authorId = (Long) session.getAttribute("memberId");
-if (authorId == null) {
-    throw new RuntimeException("로그인이 필요합니다");
-}
-```
-
-**개선 방향**:
-```java
-@LoginRequired
-@PostMapping("/posts")
-public ResponseEntity<PostResponse> createPost(@LoginMember Long memberId, ...) {
-    // memberId 자동 주입
-}
-```
+- Controller마다 반복되던 세션 체크 코드 제거
+- @LoginMember 어노테이션으로 memberId 자동 주입
 
 **3. 세션 키 상수화**
-
-**현재 문제**: 매직 스트링 사용
-```java
-session.getAttribute("memberId");
-```
-
-**개선 방향**:
-```java
-public class SessionConst {
-    public static final String MEMBER_ID = "memberId";
-}
-
-session.getAttribute(SessionConst.MEMBER_ID);
-```
+- 매직 스트링 "memberId" → SessionConst.MEMBER_ID 상수로 교체
+- 오타 방지 및 변경 시 단일 수정 포인트 확보
 
 ---
 
