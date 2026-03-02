@@ -42,6 +42,10 @@
 - Spring Data JPA
 - MySQL 8.0
 - Gradle
+- 
+### Infrastructure
+- AWS EC2 (Amazon Linux 2023, t3.micro)
+- AWS RDS (MySQL 8.4, db.t4g.micro)
 
 ### Authentication
 - BCrypt 비밀번호 암호화
@@ -591,6 +595,87 @@ return new SubscriptionResponse(subscriberId, creatorId);
 **향후 개선**:
 - 파라미터가 3개 이상이면 DTO로 래핑
 - 메서드 네이밍 컨벤션 문서화
+
+---
+
+## 🚨 배포 트러블슈팅
+
+### 1. AWS EC2 SSH 접속 무한 대기 (Hang) 현상
+
+**문제 상황**
+- EC2 인스턴스에 SSH 접속 시 에러 메시지 없이 터미널 커서만 깜빡이며 무한 대기
+
+**원인**
+- 최신 맥북의 OpenSSH 10.x 버전은 SSH 패킷에 IPQoS(Quality of Service) 태그를 기본으로 붙여서 전송
+- 일부 통신사 네트워크 장비에서 해당 태그를 비정상 트래픽으로 판단하여 패킷을 중간에서 차단
+- 서버 문제가 아닌 로컬 ↔ 서버 사이의 네트워크 단절 문제
+
+**해결**
+```bash
+# IPQoS 태그 없이 접속
+ssh -i ~/.ssh/writehub-server.pem -o IPQoS=none ec2-user@[EC2_IP]
+```
+
+**영구 적용 (SSH Config 설정)**
+```bash
+echo "Host *" >> ~/.ssh/config
+echo "  IPQoS none" >> ~/.ssh/config
+```
+
+**배운 점**
+- SSH 접속 문제가 항상 서버/보안그룹 문제는 아님
+- 네트워크 레벨의 패킷 드랍도 원인이 될 수 있음
+- `-o` 옵션으로 SSH 동작을 세밀하게 제어 가능
+
+---
+
+### 2. Gradle Toolchain - JDK를 찾지 못하는 문제
+
+**문제 상황**
+- EC2에 Java 설치 후 `./gradlew bootJar` 실행 시 빌드 실패
+- `Toolchain installation does not provide the required capabilities: [JAVA_COMPILER]` 에러 발생
+
+**원인**
+- `build.gradle`의 `java { toolchain { } }` 설정이 Gradle에게 JDK를 자동으로 찾거나 다운받으라고 지시
+- EC2 환경에서는 외부 다운로드가 차단되어 JDK를 찾지 못함
+- `java-21-amazon-corretto`만 설치되어 있었고 컴파일러가 포함된 `devel` 패키지가 없었음
+
+**해결**
+```bash
+# JDK devel 패키지 설치
+sudo dnf install java-21-amazon-corretto-devel -y
+```
+```groovy
+// build.gradle toolchain → sourceCompatibility 방식으로 변경
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+```
+
+**배운 점**
+- JRE(실행)와 JDK(컴파일)의 차이
+- Gradle toolchain은 로컬 개발 환경에 적합하고 서버 배포 시 명시적 설정이 안정적
+- EC2 같은 제한된 환경에서는 `sourceCompatibility` 방식이 더 적합
+
+---
+
+### 3. Unknown database 'writehub' 에러
+
+**문제 상황**
+- 서버 실행 시 `Unknown database 'writehub'` 에러로 애플리케이션 시작 실패
+
+**원인**
+- RDS는 MySQL **서버**만 생성된 것이고, 실제 사용할 **데이터베이스(스키마)** 는 별도로 생성해야 함
+
+**해결**
+```sql
+CREATE DATABASE writehub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+**배운 점**
+- RDS 생성 ≠ 데이터베이스 생성
+- MySQL 서버와 데이터베이스(스키마)는 별개의 개념
 
 ---
 
