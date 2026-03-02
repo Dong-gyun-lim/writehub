@@ -4,8 +4,13 @@
 
 ## 📋 프로젝트 개요
 
-**개발 기간**: 2025.02.17 ~ 2025.02.21 (약 5일)  
+**개발 기간**: 2025.02.17 ~ 2025.03.02  
+
 **개발 인원**: 1인 (백엔드)
+
+**배포 서버**: http://43.203.179.195:8080
+
+**API 테스트**: Postman Collection으로 확인 가능 (아래 참고)
 
 **기획 의도**:
 - 구독 기반 콘텐츠 플랫폼의 핵심 도메인 모델링
@@ -42,10 +47,13 @@
 - Spring Data JPA
 - MySQL 8.0
 - Gradle
-- 
+
 ### Infrastructure
 - AWS EC2 (Amazon Linux 2023, t3.micro)
 - AWS RDS (MySQL 8.4, db.t4g.micro)
+
+### CI/CD
+- GitHub Actions (push → 자동 빌드 및 배포)
 
 ### Authentication
 - BCrypt 비밀번호 암호화
@@ -679,6 +687,60 @@ CREATE DATABASE writehub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ---
 
+### 4. Spring Boot에서 ~ (틸드) 경로 인식 불가
+
+**문제 상황**
+- `--spring.config.location=file:~/application.yml` 설정 후 서버 실행 시 실패
+- `Config data resource 'file [~/application.yml]' does not exist` 에러 발생
+
+**원인**
+- `~`(틸드)는 bash 쉘에서만 `/home/ec2-user`로 변환됨
+- Spring Boot는 쉘이 아니기 때문에 `~`를 문자 그대로 인식
+- 즉 `~`라는 이름의 디렉토리를 찾으려다 실패
+
+**해결**
+```bash
+# 틸드(~) 대신 절대 경로 사용
+java -jar /home/ec2-user/build/libs/writehub-0.0.1-SNAPSHOT.jar \
+  --spring.config.location=file:/home/ec2-user/application.yml
+```
+
+**배운 점**
+- `~`는 쉘 전용 문법, JVM 프로세스에는 통하지 않음
+- Spring Boot 경로 설정은 항상 절대 경로 사용
+
+---
+
+### 5. GitHub Actions 빌드 타임아웃
+
+**문제 상황**
+- EC2에서 직접 빌드 시 GitHub Actions 타임아웃 발생
+- t3.micro 메모리 부족으로 Gradle 빌드가 10분 이상 소요
+
+**원인**
+- t3.micro는 RAM 1GB로 Gradle 빌드하기엔 부족
+- GitHub Actions SSH 연결이 빌드 완료 전에 끊김
+
+**해결**
+- EC2에서 빌드하는 방식 → GitHub Actions에서 빌드 후 jar만 EC2로 전송하는 방식으로 변경
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest  # GitHub 서버에서 빌드
+    steps:
+      - name: Gradle 빌드
+        run: ./gradlew bootJar
+      - name: jar 파일 EC2로 전송
+        uses: appleboy/scp-action@master
+```
+
+**배운 점**
+- 빌드는 리소스가 충분한 GitHub Actions 서버에서
+- EC2는 실행만 담당하는 역할 분리
+- t3.micro 같은 저사양 서버에서는 빌드 부담을 줄여야 함
+
+---
+
 ## 🚀 실행 방법
 
 ### 1. MySQL 데이터베이스 생성
@@ -718,6 +780,8 @@ spring:
 - [x] Postman Collection 작성
 - [x] API 테스트 완료
 - [x] v1.1 리팩토링 (예외처리, ArgumentResolver, 세션상수화)
+- [x] AWS EC2 + RDS 배포
+- [x] GitHub Actions CI/CD 구축
 
 **총 22개 API 완성**
 
