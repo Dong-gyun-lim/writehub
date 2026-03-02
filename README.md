@@ -4,7 +4,9 @@
 
 ## 📋 프로젝트 개요
 
-**개발 기간**: 2025.02.17 ~ 2025.03.02  
+**개발 기간**: 2025.02.17 ~ 2025.02.21 (5일)
+
+**배포/개선**: 2026.02 ~ 2026.03
 
 **개발 인원**: 1인 (백엔드)
 
@@ -181,8 +183,8 @@ com.writehub
 ### 주요 테스트 캡쳐
 - [회원가입 성공](docs/member/회원가입.png)
 - [로그인 성공](docs/member/로그인.png)
-- [게시글 작성](docs/post/게시글_작성.png)
-- [구독자 전용 게시글 권한 체크](docs/post/구독자_게시글_조회.png)
+- [게시글 작성](docs/post/게시글작성.png)
+- [구독자 전용 게시글 권한 체크](docs/post/구독자게시글조회.png)
 - [팔로우 성공](docs/follow/팔로우.png)
 - [구독 성공](docs/subscription/구독.png)
 
@@ -603,6 +605,33 @@ return new SubscriptionResponse(subscriberId, creatorId);
 **향후 개선**:
 - 파라미터가 3개 이상이면 DTO로 래핑
 - 메서드 네이밍 컨벤션 문서화
+
+---
+
+### 10. 자기 자신 언팔로우, 구독 취소 방지 누락
+
+**문제**:
+- 팔로우에는 자기 자신 방지 로직이 있었으나 언팔로우에는 누락
+- 구독에는 자기 자신 방지 로직이 있었으나 구독 취소에는 누락
+
+**해결**:
+```java
+//언팔로우
+if(followerId.equals(followingId)){
+    throw new BadRequestException("자기 자신은 언팔로우할 수 없습니다");
+}
+```
+
+```java
+// 구독 취소
+if(subscriberId.equals(creatorId)){
+    throw new BadRequestException("자기 자신은 구독 취소할 수 없습니다");
+}
+```
+**배운 점**: 
+- 구독/구독취소, 팔로우/언팔로우처럼 대칭되는 기능은
+항상 같은 검증 로직이 적용되는지 확인 필요
+- 실수를 좀 줄여보기
 
 ---
 

@@ -58,11 +58,17 @@ public class SubscriptionService {
      */
     @Transactional
     public SubscriptionResponse unSubscribe(Long subscriberId, Long creatorId) {
-        // 1. 구독 관계 조회
+
+        // 1. 자기 자신 구독 취소 방지
+        if(subscriberId.equals(creatorId)){
+            throw new BadRequestException("자기 자신은 구독 취소할 수 없습니다");
+        }
+
+        // 2. 구독 관계 조회
         Subscription subscription = subscriptionRepository.findBySubscriberIdAndCreatorId(subscriberId, creatorId)
                 .orElseThrow(() -> new NotFoundException("구독 관계가 존재하지 않습니다"));
 
-        // 2. 구독 삭제
+        // 3. 구독 삭제
         subscriptionRepository.delete(subscription);
 
         return new SubscriptionResponse(subscriberId, creatorId);
