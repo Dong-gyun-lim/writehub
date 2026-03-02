@@ -58,14 +58,20 @@ public class FollowService {
      */
     @Transactional
     public FollowResponse unfollow(Long followerId, Long followingId) {
-        // 1. 팔로우 관계 조회
+
+        // 1. 자기 자신 언팔로우 방지
+        if(followerId.equals(followingId)){
+            throw new BadRequestException("자기 자신은 언팔로우할 수 없습니다");
+        }
+
+        // 2. 팔로우 관계 조회
         Follow follow = followRepository.findByFollowerIdAndFollowingId(followerId, followingId)
                 .orElseThrow(() -> new NotFoundException("팔로우 관계가 존재하지 않습니다"));
 
-        // 2. 팔로우 삭제
+        // 3. 팔로우 삭제
         followRepository.delete(follow);
 
-        // 3. 응답 반환
+        // 4. 응답 반환
         return new FollowResponse(followerId, followingId);
     }
 
