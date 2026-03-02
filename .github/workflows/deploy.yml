@@ -38,6 +38,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             pkill -f 'writehub' || true
-            sleep 2
+            sleep 3
             nohup java -jar ~/build/libs/writehub-0.0.1-SNAPSHOT.jar > ~/app.log 2>&1 &
+            sleep 2
             echo "배포 완료!"
