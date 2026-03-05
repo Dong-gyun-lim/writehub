@@ -841,6 +841,8 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 1. `postman/WriteHubAPI.postman_collection.json` 파일을 Postman에 Import
 2. 회원가입 → 로그인 → 게시글 작성 순서로 테스트
 
+---
+
 ## 📝 완료 현황
 
 ### 완료 (100%)
