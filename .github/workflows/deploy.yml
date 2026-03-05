@@ -37,7 +37,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latestㅌ₩
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latest₩
 
       - name: EC2 배포
         uses: appleboy/ssh-action@master
