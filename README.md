@@ -53,9 +53,11 @@
 ### Infrastructure
 - AWS EC2 (Amazon Linux 2023, t3.micro)
 - AWS RDS (MySQL 8.4, db.t4g.micro)
+- Docker / DockerHub
 
 ### CI/CD
 - GitHub Actions (push → 자동 빌드 및 배포)
+- Docker (컨테이너 기반 배포)
 
 ### Authentication
 - BCrypt 비밀번호 암호화
@@ -770,32 +772,74 @@ jobs:
 
 ---
 
+### 6. Mac M4 ARM 아키텍처 불일치
+
+**문제 상황**
+- EC2에서 docker pull 시 `no matching manifest for linux/amd64` 에러 발생
+
+**원인**
+- M4 맥북은 ARM(arm64) 아키텍처
+- EC2는 x86_64(amd64) 아키텍처
+- 맥북에서 빌드한 이미지가 ARM용이라 EC2에서 실행 불가
+
+**해결**
+```bash
+docker buildx build --platform linux/amd64 -t gyunini/writehub --push .
+```
+
+**배운 점**
+- ARM과 amd64 아키텍처 차이 이해
+- --platform 옵션으로 타겟 아키텍처 지정 가능
+- M1/M2/M3/M4 맥북 사용자는 배포 시 항상 플랫폼 지정 필요
+
+---
+
 ## 🚀 실행 방법
 
-### 1. MySQL 데이터베이스 생성
+### 로컬 실행 (직접 실행)
+
+#### 1. MySQL 데이터베이스 생성
 ```sql
 CREATE DATABASE writehub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 2. application.yml 설정
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/writehub
-    username: root
-    password: your_password
+#### 2. application.yml 설정
+```bash
+cp src/main/resources/application-example.yml src/main/resources/application.yml
+# application.yml에 DB 정보 입력
 ```
 
-### 3. 실행
+#### 3. 실행
 ```bash
 ./gradlew bootRun
 ```
 
-### 4. Postman으로 API 테스트
-1. `postman/WriteHub.postman_collection.json` 파일을 Postman에 Import
-2. 회원가입 → 로그인 → 게시글 작성 순서로 테스트
+---
+
+### Docker로 실행
+
+#### 1. docker-compose.yml 설정
+```bash
+cp docker-compose-example.yml docker-compose.yml
+# docker-compose.yml에 DB 정보 입력
+```
+
+#### 2. 실행
+```bash
+docker-compose up
+```
+
+#### ⚠️ M1/M2/M3/M4 맥북 사용자 주의
+```bash
+# EC2 배포 시 반드시 플랫폼 지정
+docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
+```
 
 ---
+
+### Postman으로 API 테스트
+1. `postman/WriteHubAPI.postman_collection.json` 파일을 Postman에 Import
+2. 회원가입 → 로그인 → 게시글 작성 순서로 테스트
 
 ## 📝 완료 현황
 
@@ -811,6 +855,8 @@ spring:
 - [x] v1.1 리팩토링 (예외처리, ArgumentResolver, 세션상수화)
 - [x] AWS EC2 + RDS 배포
 - [x] GitHub Actions CI/CD 구축
+- [x] Docker 컨테이너화 (Dockerfile, docker-compose)
+- [x] DockerHub 이미지 배포
 
 **총 22개 API 완성**
 
