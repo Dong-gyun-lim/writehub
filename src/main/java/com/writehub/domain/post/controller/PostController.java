@@ -48,7 +48,7 @@ public class PostController {
     }
 
     /**
-     * 게시글 상세 조회(비로그인 조회 허용)
+     * 게시글 상세 조회(비로그인 허용)
      */
     @GetMapping("/posts/{postId}")
     public ResponseEntity<PostResponse> getPost(
