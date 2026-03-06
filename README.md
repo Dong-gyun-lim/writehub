@@ -321,7 +321,7 @@ if (!currentTagSet.equals(newTagSet)) {
 **선택**: 구독자 + 작성자 본인만 조회 가능
 
 **이유**:
-- 유료 블로그 플랫폼 특성 (포스타입과 유사한 비즈니스 모델)
+- 구독 기반 콘텐츠 플랫폼의 비즈니스 모델 구현
 - 팔로우는 가벼운 관심 표시 (알림/피드용)
 - 구독은 실제 콘텐츠 접근 권한 (수익 모델과 연결)
 
@@ -337,6 +337,28 @@ if (post.getVisibility() == Visibility.SUBSCRIBER_ONLY) {
 ```
 
 **향후 개선**: Visibility enum 이름 변경 (FOLLOWER_ONLY → SUBSCRIBER_ONLY)
+
+---
+
+### 8. 배포 방식: nohup jar → Docker 컨테이너
+
+**상황**: EC2 배포 방식을 어떻게 할 것인가?
+
+**선택**: Docker 컨테이너 기반 배포
+
+**이유**:
+- nohup 방식은 EC2 환경에 직접 의존 (Java 버전, 경로 등)
+- Docker는 환경에 관계없이 동일한 실행 환경 보장
+- 이미지 버전 관리 가능 (DockerHub)
+- 컨테이너 교체만으로 무중단에 가까운 배포 가능
+
+**트레이드오프**:
+- 장점: 환경 일관성, 이식성, 버전 관리
+- 단점: Docker 학습 비용, 이미지 빌드 시간 증가
+
+**향후 개선**:
+- Docker Compose로 멀티 컨테이너 관리
+- 무중단 배포 (Blue/Green 또는 Rolling Update)
 
 ---
 
@@ -770,6 +792,9 @@ jobs:
 - EC2는 실행만 담당하는 역할 분리
 - t3.micro 같은 저사양 서버에서는 빌드 부담을 줄여야 함
 
+**현재 방식**
+- 이후 Docker 기반 배포로 전환 (트러블슈팅 6번 참고)
+
 ---
 
 ### 6. Mac M4 ARM 아키텍처 불일치
@@ -791,6 +816,45 @@ docker buildx build --platform linux/amd64 -t gyunini/writehub --push .
 - ARM과 amd64 아키텍처 차이 이해
 - --platform 옵션으로 타겟 아키텍처 지정 가능
 - M1/M2/M3/M4 맥북 사용자는 배포 시 항상 플랫폼 지정 필요
+
+---
+
+### 7. GitHub Actions Secret 오기입
+
+**문제 상황**
+- Docker 컨테이너 실행 후 즉시 종료 (Exited (1))
+- `Access denied for user 'gyunini'@'172.31.11.196'` 에러 발생
+
+**원인**
+- GitHub Secrets의 `DB_USERNAME`에 RDS 계정명(`admin`) 대신 DockerHub 계정명(`gyunini`)을 잘못 입력
+
+**해결**
+- GitHub → Settings → Secrets → `DB_USERNAME` 값을 `admin`으로 수정
+
+**배운 점**
+- Secret 이름이 비슷할 때 혼동하기 쉬움 (DOCKERHUB_USERNAME vs DB_USERNAME)
+- 컨테이너가 바로 죽으면 `docker logs [컨테이너명]`으로 원인 확인
+
+---
+
+### 8. deploy.yml tags 한글 오타
+
+**문제 상황**
+- GitHub Actions 빌드 시 `invalid tag "***/writehub:latestㅌ₩": invalid reference format` 에러 발생
+
+**원인**
+- deploy.yml 작성 시 `latest` 뒤에 한글 입력 모드로 인한 오타 삽입
+
+**해결**
+- tags 줄을 완전히 삭제 후 직접 타이핑 (복붙 금지)
+```yaml
+tags: ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latest
+```
+
+**배운 점**
+- yml 파일 작성 시 한/영 전환 주의
+- Secret 값이 마스킹(`***`)되어 표시되므로 오타 확인이 어려움
+- Re-run jobs는 수정된 Secret 값을 반영하지 않음 → 새 커밋 푸시 필요
 
 ---
 
@@ -856,7 +920,7 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - [x] API 테스트 완료
 - [x] v1.1 리팩토링 (예외처리, ArgumentResolver, 세션상수화)
 - [x] AWS EC2 + RDS 배포
-- [x] GitHub Actions CI/CD 구축
+- [x] GitHub Actions + Docker 기반 CI/CD 구축
 - [x] Docker 컨테이너화 (Dockerfile, docker-compose)
 - [x] DockerHub 이미지 배포
 
@@ -929,6 +993,6 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 ## 👤 개발자
 
 **임동균**
-- 경일대학교 컴퓨터공학과 (GPA 4.37/4.5)
+- 경일대학교 컴퓨터사이언스학부 클라우드컴퓨팅 전공 (GPA 4.37/4.5)
 - Email: sfeagle130@naver.com
 - GitHub: https://github.com/Dong-gyun-lim
