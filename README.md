@@ -10,7 +10,9 @@
 
 **개발 인원**: 1인 (백엔드)
 
-**배포 서버**: http://43.203.179.195:8080
+**배포 서버 (백엔드)**: http://43.203.179.195:8080
+
+**배포 서버 (프론트)**: https://writehub-front.vercel.app
 
 **API 테스트**: Postman Collection으로 확인 가능 (아래 참고)
 
@@ -42,6 +44,11 @@
 ---
 
 ## 🛠 기술 스택
+
+### Frontend
+- React 19
+- Vite 7
+- Vercel (배포)
 
 ### Backend
 - Java 21
@@ -923,6 +930,8 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - [x] GitHub Actions + Docker 기반 CI/CD 구축
 - [x] Docker 컨테이너화 (Dockerfile, docker-compose)
 - [x] DockerHub 이미지 배포
+- [x] 프론트엔드 연동 (React + Vite)
+- [x] Vercel 배포
 
 **총 22개 API 완성**
 
@@ -930,7 +939,7 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 ## 🔜 향후 개선 계획
 
-### 단기 v1.1 (완료)
+### 단기 v1.1 (완료 ✅)
 
 **1. 전역 예외 처리 (GlobalExceptionHandler)**
 - RuntimeException, ResponseStatusException → 커스텀 예외 계층 구조로 교체
@@ -959,6 +968,12 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 **3. Visibility enum 리팩토링**
 - `FOLLOWER_ONLY` → `SUBSCRIBER_ONLY`로 명확하게 변경
+
+**4. 검색 API 추가**
+- GET /api/posts?keyword=검색어 (제목/내용/태그)
+
+**5. 프로필 수정 API 추가**
+- PUT /api/members/me (username, bio)
 
 ---
 
