@@ -7,6 +7,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.writehub.domain.post.dto.PostListResponse;
 import com.writehub.domain.post.dto.PostSearchCondition;
 import com.writehub.domain.post.entity.Post;
+import com.writehub.domain.post.entity.QPostTag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -62,11 +63,14 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     //태그 이름으로 검색 (서브쿼리)
     private BooleanExpression tagContains(String tag) {
         if(!StringUtils.hasText(tag)) return null;
+
+        QPostTag postTagSub = new QPostTag("postTagSub");
+
         return post.id.in(
                 JPAExpressions
-                        .select(postTag.post.id)
-                        .from(postTag)
-                        .where(postTag.tag.name.containsIgnoreCase(tag))
+                        .select(postTagSub.post.id)
+                        .from(postTagSub)
+                        .where(postTagSub.tag.name.containsIgnoreCase(tag))
         );
     }
 
