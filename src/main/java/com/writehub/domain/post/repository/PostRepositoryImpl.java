@@ -62,15 +62,17 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
     //태그 이름으로 검색 (서브쿼리 사용)
     private BooleanExpression tagContains(String tag) {
-        if(!StringUtils.hasText(tag)) return null;
+        if (!StringUtils.hasText(tag)) return null;
 
         QPostTag postTagSub = new QPostTag("postTagSub");
+        com.writehub.domain.tag.entity.QTag tagSub = new com.writehub.domain.tag.entity.QTag("tagSub");
 
         return post.id.in(
                 JPAExpressions
                         .select(postTagSub.post.id)
                         .from(postTagSub)
-                        .where(postTagSub.tag.name.containsIgnoreCase(tag))
+                        .join(postTagSub.tag, tagSub)
+                        .where(tagSub.name.containsIgnoreCase(tag))
         );
     }
 
