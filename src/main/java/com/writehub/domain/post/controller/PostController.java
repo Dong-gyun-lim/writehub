@@ -1,14 +1,12 @@
 package com.writehub.domain.post.controller;
 
-import com.writehub.domain.post.dto.PostCreateRequest;
-import com.writehub.domain.post.dto.PostListResponse;
-import com.writehub.domain.post.dto.PostResponse;
-import com.writehub.domain.post.dto.PostUpdateRequest;
+import com.writehub.domain.post.dto.*;
 import com.writehub.domain.post.service.PostService;
 import com.writehub.global.common.LoginMember;
 import com.writehub.global.common.SessionConst;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -92,6 +90,19 @@ public class PostController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<PostListResponse> response = postService.getPostsByAuthor(memberId, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 게시글 검색
+     */
+    @GetMapping("/posts/search")
+    public ResponseEntity<Page<PostListResponse>> searchPosts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String tag,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PostSearchCondition condition = new PostSearchCondition(keyword, tag);
+        Page<PostListResponse> response = postService.searchPosts(condition, pageable);
         return ResponseEntity.ok(response);
     }
 }

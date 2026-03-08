@@ -2,10 +2,7 @@ package com.writehub.domain.post.service;
 
 import com.writehub.domain.member.entity.Member;
 import com.writehub.domain.member.repository.MemberRepository;
-import com.writehub.domain.post.dto.PostCreateRequest;
-import com.writehub.domain.post.dto.PostListResponse;
-import com.writehub.domain.post.dto.PostResponse;
-import com.writehub.domain.post.dto.PostUpdateRequest;
+import com.writehub.domain.post.dto.*;
 import com.writehub.domain.post.entity.Post;
 import com.writehub.domain.post.entity.PostTag;
 import com.writehub.domain.post.entity.Visibility;
@@ -196,6 +193,13 @@ public class PostService {
 
             return new PostListResponse(post, tags);
         });
+    }
+
+    /**
+     * 게시글 검색
+     */
+    public Page<PostListResponse> searchPosts(PostSearchCondition condition, Pageable pageable) {
+        return postRepository.searchPosts(condition, pageable);
     }
 
     /**
