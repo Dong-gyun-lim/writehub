@@ -103,10 +103,9 @@ public class PostController {
             @RequestParam(required = false) String tag,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        log.info("검색 요청 - keyword: {}, tag: {}", keyword, tag);
         PostSearchCondition condition = new PostSearchCondition(keyword, tag);
         Page<PostListResponse> response = postService.searchPosts(condition, pageable);
-        log.info("검색 결과 - 총 {}건", response.getTotalElements());
+
         return ResponseEntity.ok(response);
     }
 }
