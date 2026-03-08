@@ -60,7 +60,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .or(post.content.containsIgnoreCase(keyword));
     }
 
-    //태그 이름으로 검색 (서브쿼리 사용)
+    //태그 이름으로 검색 (서브쿼리)
     private BooleanExpression tagContains(String tag) {
         if (!StringUtils.hasText(tag)) return null;
 
