@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'build.gradle'
       - 'Dockerfile'
+      - '.github/workflows/**'
 
 jobs:
   build:
@@ -49,5 +50,5 @@ jobs:
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latest
             docker stop writehub 2>/dev/null || true
             docker rm writehub 2>/dev/null || true
-            docker run -d --name writehub -p 8080:8080 -e SPRING_DATASOURCE_URL="${{ secrets.DB_URL }}" -e SPRING_DATASOURCE_USERNAME="${{ secrets.DB_USERNAME }}" -e SPRING_DATASOURCE_PASSWORD="${{ secrets.DB_PASSWORD }}" -e LOGGING_LEVEL_ORG_HIBERNATE_SQL=DEBUG -e SERVER_SERVLET_ENCODING_CHARSET=UTF-8 -e SERVER_SERVLET_ENCODING_ENABLED=true -e SERVER_SERVLET_ENCODING_FORCE=true ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latest
+            docker run -d --name writehub -p 8080:8080 -v /home/ec2-user/application.yml:/app/application.yml -e SPRING_CONFIG_LOCATION=file:/app/application.yml -e SPRING_DATASOURCE_URL="${{ secrets.DB_URL }}" -e SPRING_DATASOURCE_USERNAME="${{ secrets.DB_USERNAME }}" -e SPRING_DATASOURCE_PASSWORD="${{ secrets.DB_PASSWORD }}" ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latest
             echo "배포 완료!"
