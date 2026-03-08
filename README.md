@@ -33,6 +33,7 @@
 - ✅ 무료 구독/구독 취소
 - ✅ 태그 기능
 - ✅ 조회수 기능
+- ✅ 게시글 검색 (키워드 / 태그)
 
 ### 향후 확장 계획 (v2.0)
 - 🔜 Spring Security + JWT 인증
@@ -56,6 +57,7 @@
 - Spring Data JPA
 - MySQL 8.0
 - Gradle
+- Querydsl 5.0
 
 ### Infrastructure
 - AWS EC2 (Amazon Linux 2023, t3.micro)
@@ -150,7 +152,7 @@ com.writehub
 | GET | /api/members/me | 내 정보 조회 | O |
 | GET | /api/members/{memberId} | 특정 회원 프로필 | - |
 
-### 게시글 (Post) - 7개
+### 게시글 (Post) - 8개
 
 | Method | URL | 설명 | 인증 |
 |--------|-----|------|------|
@@ -160,6 +162,7 @@ com.writehub
 | PUT | /api/posts/{postId} | 게시글 수정 | O |
 | DELETE | /api/posts/{postId} | 게시글 삭제 | O |
 | GET | /api/members/{memberId}/posts | 특정 회원 게시글 | - |
+| GET | /api/posts/search | 게시글 검색 (키워드/태그) | - |
 
 ### 팔로우 (Follow) - 4개
 
@@ -179,7 +182,7 @@ com.writehub
 | GET | /api/members/{memberId}/subscriptions | 구독 목록 | - |
 | GET | /api/members/{creatorId}/subscribers | 구독자 목록 | - |
 
-**총 22개 API**
+**총 23개 API**
 
 ---
 
@@ -369,7 +372,7 @@ if (post.getVisibility() == Visibility.SUBSCRIBER_ONLY) {
 
 ---
 
-## 🐛 개발 중 발견한 버그와 해결
+## 🐞 개발 중 발견한 버그와 해결
 
 ### 1. 게시글 수정 시 태그 반환값 오류
 
@@ -865,6 +868,36 @@ tags: ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latest
 
 ---
 
+### 9. Docker 컨테이너 application.yml 미적용
+
+**문제 상황**
+- Docker 컨테이너 실행 후 application.yml 설정이 반영되지 않음
+- `docker inspect`로 확인 시 `Mounts: []` (마운트 없음)
+
+**원인**
+- `docker run` 명령어에 볼륨 마운트 옵션 없이 실행
+- 컨테이너 내부에 application.yml이 없어 기본값으로 동작
+
+**해결**
+- `-v` 옵션으로 EC2의 application.yml을 컨테이너에 마운트
+- `SPRING_CONFIG_LOCATION`으로 설정 파일 경로 명시
+```yaml
+# deploy.yml
+docker run -d \
+  -p 8080:8080 \
+  -v /home/ec2-user/application.yml:/app/application.yml \
+  -e SPRING_CONFIG_LOCATION=file:/app/application.yml \
+  --name writehub \
+  gyunini/writehub:latest
+```
+
+**배운 점**
+- Docker 컨테이너는 호스트 파일에 직접 접근 불가
+- 민감한 설정 파일은 GitHub에 올리지 않고 서버에서 직접 관리
+- `-v` 마운트로 호스트 파일을 컨테이너 내부에 주입 가능
+
+---
+
 ## 🚀 실행 방법
 
 ### 로컬 실행 (직접 실행)
@@ -916,7 +949,6 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 ## 📝 완료 현황
 
-### 완료 (100%)
 - [x] 프로젝트 설계 (ERD, API 명세)
 - [x] 엔티티/Repository 작성 (전체)
 - [x] Member 도메인 (7개 API)
@@ -932,8 +964,9 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - [x] DockerHub 이미지 배포
 - [x] 프론트엔드 연동 (React + Vite)
 - [x] Vercel 배포
+- [x] 게시글 검색 API (Querydsl)
 
-**총 22개 API 완성**
+**총 23개 API 완성**
 
 ---
 
@@ -959,20 +992,16 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 ### 중기 (v1.5)
 
 **1. N+1 문제 최적화**
-- 게시글 목록 조회 시 일괄 조회 (쿼리 2개)
-- Querydsl 도입 검토
+- 게시글 목록 조회 시 일괄 조회 (default_batch_fetch_size 또는 fetch join)
 
 **2. 조회수 시스템 개선**
 - Redis + 스케줄러 배치 처리
 - IP/User 기반 중복 체크 (24시간)
 
-**3. Visibility enum 리팩토링**
-- `FOLLOWER_ONLY` → `SUBSCRIBER_ONLY`로 명확하게 변경
-
-**4. 검색 API 추가**
+**3. 검색 API 추가** (완료 ✅)
 - GET /api/posts?keyword=검색어 (제목/내용/태그)
 
-**5. 프로필 수정 API 추가**
+**4. 프로필 수정 API 추가** 
 - PUT /api/members/me (username, bio)
 
 ---
@@ -986,7 +1015,7 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 **2. 성능 최적화**
 - Redis 캐싱 (프로필 통계, 조회수)
-- Querydsl 도입
+- Querydsl 도입 완료 (검색 API) / 추가 최적화 예정
 - DB 인덱싱 최적화
 
 **3. 추가 기능**
