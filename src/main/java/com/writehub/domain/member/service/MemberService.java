@@ -74,7 +74,7 @@ public class MemberService {
         session.setAttribute(SessionConst.MEMBER_ID, member.getId());
 
         //4. 응답 반환
-        return new LoginResponse(member.getId(), member.getUsername());
+        return new LoginResponse(member.getId(), member.getUsername(), member.getNickname());
     }
 
     /**
@@ -122,6 +122,18 @@ public class MemberService {
     public Page<MemberResponse> getMemberList(Pageable pageable) {
         Page<Member> members = memberRepository.findAll(pageable);
         return members.map(MemberResponse::new);
+    }
+
+    /**
+     * 프로필 수정
+     */
+    public MemberResponse updateProfile(Long memberId, MemberUpdateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다."));
+
+        member.updateProfile(request.getNickname(), request.getBio());
+
+        return new MemberResponse(member);
     }
 
 }

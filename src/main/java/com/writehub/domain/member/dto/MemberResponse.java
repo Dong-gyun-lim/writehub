@@ -12,6 +12,7 @@ public class MemberResponse {
     private final String email;
     private final String username;
     private final String bio;
+    private final String nickname;
     private final LocalDateTime createdAt;
 
     // 엔티티 → DTO 변환 생성자
@@ -20,6 +21,7 @@ public class MemberResponse {
         this.email = member.getEmail();
         this.username = member.getUsername();
         this.bio = member.getBio();
+        this.nickname = member.getNickname();
         this.createdAt = member.getCreatedAt();
     }
 }

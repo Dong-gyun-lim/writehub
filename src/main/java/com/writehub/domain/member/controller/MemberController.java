@@ -77,4 +77,15 @@ public class MemberController {
         Page<MemberResponse> response = memberService.getMemberList(pageable);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * 프로필 수정
+     */
+    @PatchMapping("/members/me")
+    public ResponseEntity<MemberResponse> updateProfile(
+            @LoginMember Long memberId,
+            @Valid @RequestBody MemberUpdateRequest request) {
+        MemberResponse response = memberService.updateProfile(memberId, request);
+        return ResponseEntity.ok(response);
+    }
 }

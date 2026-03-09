@@ -12,6 +12,7 @@ public class MemberDetailResponse {
     private final String email;
     private final String username;
     private final String bio;
+    private final String nickname;
     private final long followerCount;
     private final long followingCount;
     private final long postCount;
@@ -28,6 +29,7 @@ public class MemberDetailResponse {
         this.email = member.getEmail();
         this.username = member.getUsername();
         this.bio = member.getBio();
+        this.nickname = member.getNickname();
         this.followerCount = followerCount;
         this.followingCount = followingCount;
         this.postCount = postCount;

@@ -28,7 +28,10 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false, length = 50)
     private String username;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 50)
+    private String nickname;
+
+    @Column(length = 255)
     private String bio;
 
     //== 생성 메서드 ==//
@@ -37,14 +40,15 @@ public class Member extends BaseTimeEntity {
         member.email=email;
         member.password=password;
         member.username=username;
+        member.nickname=username; //닉네임 기본값 = username 이후 정보 수정에서 변경 가능
         member.bio=bio;
         return member;
     }
 
     //== 비즈니스 로직 ==//
-    public void updateProfile(String username, String bio) {
-        this.username=username;
-        this.bio=bio;
+    public void updateProfile(String nickname, String bio) {
+        if(nickname != null) this.nickname=nickname;
+        if(bio != null) this.bio=bio;
     }
 
     public void changePassword(String newPassword) {
