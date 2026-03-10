@@ -1016,7 +1016,7 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - GET /api/posts?keyword=검색어 (제목/내용/태그)
 
 **4. 프로필 수정 API 추가** (완료 ✅ 03/09)
-- PUT /api/members/me (username, bio)
+- PATCH /api/members/me (username, bio)
 
 ---
 
