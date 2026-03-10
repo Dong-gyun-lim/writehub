@@ -4,7 +4,7 @@
 
 ## 📋 프로젝트 개요
 
-**개발 기간**: 2025.02.17 ~ 2025.02.21 (5일)
+**개발 기간**: 2026.02.17 ~ 2025.02.21 (5일)
 
 **배포/개선**: 2026.02 ~ 2026.03
 
@@ -34,6 +34,7 @@
 - ✅ 태그 기능
 - ✅ 조회수 기능
 - ✅ 게시글 검색 (키워드 / 태그)
+- ✅ 닉네임 / 프로필 수정
 
 ### 향후 확장 계획 (v2.0)
 - 🔜 Spring Security + JWT 인증
@@ -94,7 +95,7 @@ Post (N) ──< (N) Tag (PostTag 중간 테이블)
 
 ### 주요 설계 결정
 - **단방향 매핑**: Post → Member (양방향 매핑 복잡도 방지)
-- **CASCADE**: Service 레이어에서 명시적 삭제 처리
+- **CASCADE**: Cascade 대신 Service Layer에서 명시적 삭제 로직으로 처리
 - **BaseTimeEntity**: 생성일/수정일 자동 관리 (@EnableJpaAuditing)
 
 ---
@@ -151,8 +152,9 @@ com.writehub
 | GET | /api/members | 전체 회원 목록 | - |
 | GET | /api/members/me | 내 정보 조회 | O |
 | GET | /api/members/{memberId} | 특정 회원 프로필 | - |
+| PATCH | /api/members/me | 프로필 수정 | O |
 
-### 게시글 (Post) - 8개
+### 게시글 (Post) - 7개
 
 | Method | URL | 설명 | 인증 |
 |--------|-----|------|------|
@@ -182,7 +184,7 @@ com.writehub
 | GET | /api/members/{memberId}/subscriptions | 구독 목록 | - |
 | GET | /api/members/{creatorId}/subscribers | 구독자 목록 | - |
 
-**총 23개 API**
+**총 22개 API**
 
 ---
 
@@ -237,7 +239,7 @@ if (!currentTagSet.equals(newTagSet)) {
 
 **이유**:
 - 빠른 MVP 구현 (Security 학습 시간 절약, 핵심 기능 집중)
-- BCrypt는 업계 표준 암호화 방식
+- BCrypt는 비밀번호 저장을 위한 업계 표준 해시 알고리즘
 - 설정이 간단하고 안정적
 
 **트레이드오프**:
@@ -253,12 +255,10 @@ if (!currentTagSet.equals(newTagSet)) {
 **선택**: ResponseEntity로 HTTP 상태 코드 제어
 
 **이유**:
-- RESTful API 설계 원칙 준수
-    - 생성(POST): 201 Created
-    - 조회(GET): 200 OK
-    - 삭제(DELETE): 204 No Content
-- 응답 의도가 코드에서 명확히 드러남
-- 향후 헤더 추가, 에러 응답 커스터마이징 용이
+- RESTful API 원칙에 맞게 자원(Resource) 중심 URL과
+  HTTP Method(GET, POST, PUT, DELETE)를 사용하여 API를 설계함
+- ResponseEntity를 사용하여 HTTP 상태 코드를 명확하게 반환하도록 구현함
+- 향후 헤더 추가나 에러 응답 커스터마이징에 유연하게 대응 가능
 
 **트레이드오프**:
 - 장점: 명확한 의도 표현, RESTful 원칙 준수
@@ -312,14 +312,13 @@ if (!currentTagSet.equals(newTagSet)) {
 
 **이유**:
 - 구현 간단
-- 실시간 반영
+- 조회 시 즉시 증가 방식
 - 블로그 조회수는 대략적인 수치면 충분
 - 트래픽이 초기엔 동시 요청 많지 않음
 
 **트레이드오프**:
-- 장점: 빠른 구현, 실시간 반영
+- 장점: 구현이 간단하고 조회 시 즉시 증가 방식
 - 단점: 새로고침 시 증가, 정확도 낮음
-
 **향후 개선**:
 - Redis + 스케줄러로 배치 처리
 - 같은 사용자 중복 체크 (24시간 단위)
@@ -716,18 +715,10 @@ echo "  IPQoS none" >> ~/.ssh/config
 # JDK devel 패키지 설치
 sudo dnf install java-21-amazon-corretto-devel -y
 ```
-```groovy
-// build.gradle toolchain → sourceCompatibility 방식으로 변경
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
-```
 
 **배운 점**
 - JRE(실행)와 JDK(컴파일)의 차이
 - Gradle toolchain은 로컬 개발 환경에 적합하고 서버 배포 시 명시적 설정이 안정적
-- EC2 같은 제한된 환경에서는 `sourceCompatibility` 방식이 더 적합
 
 ---
 
@@ -737,7 +728,7 @@ java {
 - 서버 실행 시 `Unknown database 'writehub'` 에러로 애플리케이션 시작 실패
 
 **원인**
-- RDS는 MySQL **서버**만 생성된 것이고, 실제 사용할 **데이터베이스(스키마)** 는 별도로 생성해야 함
+- RDS는 DB 인스턴스(MySQL 서버)를 생성하지만, 실제 사용할 데이터베이스(schema)는 직접 생성해야 함
 
 **해결**
 ```sql
@@ -951,8 +942,8 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 - [x] 프로젝트 설계 (ERD, API 명세)
 - [x] 엔티티/Repository 작성 (전체)
-- [x] Member 도메인 (7개 API)
-- [x] Post 도메인 (7개 API)
+- [x] Member 도메인 (7개 API) → nickname 필드 추가, 프로필 수정 API 포함
+- [x] Post 도메인 (7개 API) → 게시글 검색 API 포함
 - [x] Follow 도메인 (4개 API)
 - [x] Subscription 도메인 (4개 API)
 - [x] Postman Collection 작성
@@ -966,7 +957,7 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - [x] Vercel 배포
 - [x] 게시글 검색 API (Querydsl)
 
-**총 23개 API 완성**
+**총 22개 API 완성**
 
 ---
 
@@ -998,10 +989,10 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - Redis + 스케줄러 배치 처리
 - IP/User 기반 중복 체크 (24시간)
 
-**3. 검색 API 추가** (완료 ✅)
+**3. 검색 API 추가** (완료 ✅ 03/08)
 - GET /api/posts?keyword=검색어 (제목/내용/태그)
 
-**4. 프로필 수정 API 추가** 
+**4. 프로필 수정 API 추가** (완료 ✅ 03/09)
 - PUT /api/members/me (username, bio)
 
 ---
@@ -1015,7 +1006,7 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 **2. 성능 최적화**
 - Redis 캐싱 (프로필 통계, 조회수)
-- Querydsl 도입 완료 (검색 API) / 추가 최적화 예정
+- Querydsl 도입 부분 완료 (검색 API) / 추가 최적화 예정
 - DB 인덱싱 최적화
 
 **3. 추가 기능**
