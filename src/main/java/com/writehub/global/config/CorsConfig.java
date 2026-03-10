@@ -15,7 +15,7 @@ public class CorsConfig implements WebMvcConfigurer {
                         "https://writehub-front.vercel.app",
                         "https://writehub-front-c2movnlrw-dong-gyun-lims-projects.vercel.app"
                 )
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
