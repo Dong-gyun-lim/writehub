@@ -4,7 +4,7 @@
 
 ## 📋 프로젝트 개요
 
-**개발 기간**: 2026.02.17 ~ 2025.02.21 (5일)
+**개발 기간**: 2026.02.17 ~ 2026.02.21 (5일)
 
 **배포/개선**: 2026.02 ~ 2026.03
 
@@ -886,6 +886,29 @@ docker run -d \
 - Docker 컨테이너는 호스트 파일에 직접 접근 불가
 - 민감한 설정 파일은 GitHub에 올리지 않고 서버에서 직접 관리
 - `-v` 마운트로 호스트 파일을 컨테이너 내부에 주입 가능
+
+---
+
+### 10. CORS 설정 PATCH 메서드 누락
+
+**문제 상황**
+- 프로필 수정 요청(PATCH /api/members/me) 시 403 Forbidden 발생
+- 세션 쿠키도 정상 전달, 백엔드 로그에도 요청이 안 찍힘
+
+**원인**
+- CorsConfig의 allowedMethods에 PATCH가 누락되어 있었음
+- 브라우저가 CORS preflight(OPTIONS) 요청 시 PATCH 메서드를 허용하지 않아 차단
+
+**해결**
+```java
+registry.addMapping("/**")
+    .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+```
+
+**배운 점**
+- CORS 설정 시 사용하는 HTTP 메서드를 모두 명시해야 함
+- 403이 떠도 세션/인증 문제가 아닐 수 있음 → CORS 설정도 의심할 것
+- 백엔드 로그에 요청이 안 찍히면 Spring 진입 전에 막힌 것
 
 ---
 
