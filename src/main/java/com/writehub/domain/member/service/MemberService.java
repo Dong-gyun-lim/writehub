@@ -127,6 +127,7 @@ public class MemberService {
     /**
      * 프로필 수정
      */
+    @Transactional
     public MemberResponse updateProfile(Long memberId, MemberUpdateRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다."));
