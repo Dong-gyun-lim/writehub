@@ -912,6 +912,32 @@ registry.addMapping("/**")
 
 ---
 
+### 11. @Transactional(readOnly = true) 로 인한 프로필 수정 미반영
+
+**문제 상황**
+- 프로필 수정 후 새로고침하면 변경사항이 사라짐
+- PATCH 요청은 200 OK 반환, 응답 JSON도 정상
+
+**원인**
+- 클래스 레벨에 @Transactional(readOnly = true) 적용으로 인해
+  updateProfile() 메서드가 읽기 전용 트랜잭션으로 동작
+- JPA 변경감지(Dirty Checking)가 동작하지 않아 DB에 반영되지 않음
+
+**해결**
+- 메서드 레벨에 @Transactional 추가
+- 메서드 레벨이 클래스 레벨보다 우선순위가 높아 쓰기 트랜잭션으로 동작
+```java
+@Transactional
+public MemberResponse updateProfile(Long memberId, MemberUpdateRequest request) {
+```
+
+**배운 점**
+- 클래스 레벨 @Transactional(readOnly = true)는 조회 성능 최적화에 유리하지만
+  쓰기 메서드에는 반드시 메서드 레벨에 @Transactional을 별도로 명시해야 함
+- 응답이 200 OK여도 DB 반영 여부는 별도로 확인 필요
+
+---
+
 ## 🚀 실행 방법
 
 ### 로컬 실행 (직접 실행)
