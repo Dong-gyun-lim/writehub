@@ -57,7 +57,6 @@
 - Spring Boot 3.5.10
 - Spring Data JPA
 - MySQL 8.0
-- Gradle
 - Querydsl 5.0
 
 ### Infrastructure
@@ -270,7 +269,7 @@ if (!currentTagSet.equals(newTagSet)) {
 
 **상황**: 게시글 목록 조회 시 각 게시글마다 태그 조회 쿼리 발생
 
-**선택**: 현재 상태 유지 (N+1 허용)
+**선택**: default_batch_fetch_size: 100 적용으로 부분 최적화
 
 **이유**:
 - 한 페이지당 10~20개만 조회 (N이 작음)
@@ -283,7 +282,7 @@ if (!currentTagSet.equals(newTagSet)) {
 - 단점: 쿼리 수 증가 (페이지당 N+1개)
 
 **향후 개선**:
-- 트래픽 증가 시 일괄 조회로 최적화 (쿼리 2개로 감소)
+- 트래픽 증가 시 fetch join으로 추가 최적화 예정
 - 또는 태그 정보 캐싱 (Redis)
 
 ---
@@ -1031,8 +1030,9 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 ### 중기 (v1.5)
 
-**1. N+1 문제 최적화**
-- 게시글 목록 조회 시 일괄 조회 (default_batch_fetch_size 또는 fetch join)
+**1. N+1 문제 최적화 (완료 ✅)**
+- default_batch_fetch_size: 100 적용으로 IN절 일괄 조회로 개선
+- 향후 트래픽 증가 시 fetch join 추가 최적화 예정
 
 **2. 조회수 시스템 개선**
 - Redis + 스케줄러 배치 처리
