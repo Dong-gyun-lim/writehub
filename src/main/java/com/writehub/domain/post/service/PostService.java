@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -143,8 +144,12 @@ public class PostService {
         if (request.getTags() != null) {
             List<String> newTags = request.getTags();
 
-            Set<String> currentTagSet = new HashSet<>(currentTags);
-            Set<String> newTagSet = new HashSet<>(newTags);
+            Set<String> currentTagSet = currentTags.stream()
+                    .map(t -> t.trim().toLowerCase())
+                    .collect(Collectors.toSet());
+            Set<String> newTagSet = newTags.stream()
+                    .map(t -> t.trim().toLowerCase())
+                    .collect(Collectors.toSet());
 
             if (!currentTagSet.equals(newTagSet)) {
                 postTagRepository.deleteByPostId(postId);
@@ -210,17 +215,19 @@ public class PostService {
             return List.of();
         }
         for (String tagName : tagNames) {
+            String normalizedName = tagName.trim().toLowerCase();
             //태그가 없으면 생성, 있으면 조회
-            Tag tag = tagRepository.findByName(tagName)
-                    .orElseGet(() -> {
-                        Tag newTag = Tag.createTag(tagName);
-                        return tagRepository.save(newTag);
-                    });
+            Tag tag = tagRepository.findByName(normalizedName)
+                    .orElseGet(() ->
+                        tagRepository.save(Tag.createTag(normalizedName))
+                    );
 
             //PostTag 중간 테이블 저장
             PostTag postTag = PostTag.createPostTag(post, tag);
             postTagRepository.save(postTag);
         }
-        return tagNames;
+        return tagNames.stream()
+                .map(t->t.trim().toLowerCase())
+                .toList();
     }
 }
