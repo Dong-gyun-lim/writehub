@@ -27,8 +27,10 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
     @Override
     public Page<PostListResponse> searchPosts(PostSearchCondition condition, Pageable pageable) {
-        List<Post> posts = queryFactory
-                .selectFrom(post)
+        //1. id만 페이징 조회
+        List<Long> postIds = queryFactory
+                .select(post.id)
+                .from(post)
                 .where(
                         keywordContains(condition.getKeyword()),
                         tagContains(condition.getTag())
@@ -36,6 +38,20 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .orderBy(post.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
+                .fetch();
+
+        if(postIds.isEmpty()){
+            return Page.empty(pageable);
+        }
+
+        //2. fetch join으로 조회
+        List<Post> posts = queryFactory
+                .selectFrom(post)
+                .join(post.author).fetchJoin()
+                .leftJoin(post.postTags, postTag).fetchJoin()
+                .leftJoin(postTag.tag, tag).fetchJoin()
+                .where(post.id.in(postIds))
+                .orderBy(post.createdAt.desc())
                 .fetch();
 
         JPAQuery<Long> countQuery = queryFactory
@@ -47,10 +63,77 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 );
 
         List<PostListResponse> content = posts.stream()
-                .map(p -> new PostListResponse(p, getTagNames(p.getId())))
+                .map(p -> new PostListResponse(p, p.getPostTags().stream()
+                        .map(pt -> pt.getTag().getName())
+                        .toList()))
                 .toList();
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public Page<Post> findPostsWithPaging(Pageable pageable) {
+        //1. id만 페이징으로 조회
+        List<Long> postIds = queryFactory
+                .select(post.id)
+                .from(post)
+                .orderBy(post.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        if (postIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        //2. 해당 id로 fetch join
+        List<Post> posts = queryFactory
+                .selectFrom(post)
+                .join(post.author).fetchJoin()
+                .leftJoin(post.postTags, postTag).fetchJoin()
+                .leftJoin(postTag.tag, tag).fetchJoin()
+                .where(post.id.in(postIds))
+                .fetch();
+
+        //count 쿼리
+        JPAQuery<Long> countQuery = queryFactory
+                .select(post.count())
+                .from(post);
+
+        return PageableExecutionUtils.getPage(posts, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public Page<Post> findPostsByAuthorWithPaging(Long authorId, Pageable pageable) {
+        //1. ID조회
+        List<Long> postIds = queryFactory
+                .select(post.id)
+                .from(post)
+                .where(post.author.id.eq(authorId))
+                .orderBy(post.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        if (postIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        //2. 해당 id로 fetch join
+        List<Post> posts = queryFactory
+                .selectFrom(post)
+                .join(post.author).fetchJoin()
+                .leftJoin(post.postTags, postTag).fetchJoin()
+                .leftJoin(postTag.tag, tag).fetchJoin()
+                .where(post.id.in(postIds))
+                .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory
+                .select(post.count())
+                .where(post.author.id.eq(authorId))
+                .from(post);
+
+        return PageableExecutionUtils.getPage(posts, pageable, countQuery::fetchOne);
     }
 
     //제목 또는 내용에 키워드 포함 여부
@@ -74,15 +157,5 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                         .join(postTagSub.tag, tagSub)
                         .where(tagSub.name.containsIgnoreCase(tag))
         );
-    }
-
-    //태그 이름 목록 추출
-    private List<String> getTagNames(Long postId) {
-        return queryFactory
-                .select(tag.name)
-                .from(postTag)
-                .join(postTag.tag, tag)
-                .where(postTag.post.id.eq(postId))
-                .fetch();
     }
 }

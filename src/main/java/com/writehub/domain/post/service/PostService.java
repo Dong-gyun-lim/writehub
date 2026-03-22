@@ -17,12 +17,9 @@ import com.writehub.global.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -67,13 +64,13 @@ public class PostService {
      */
     public Page<PostListResponse> getPosts(Pageable pageable) {
         // 1. 게시글 목록 조회(페이징)
-        Page<Post> posts = postRepository.findAll(pageable);
+        Page<Post> posts = postRepository.findPostsWithPaging(pageable);
 
         // 2. Post -> PostListResponse(DTO) 변환
         return posts.map(post -> {
             //각 게시글의 태그 조회
-            List<String> tags = postTagRepository.findByPostId(post.getId()).stream()
-                    .map(postTag -> postTag.getTag().getName())
+            List<String> tags = post.getPostTags().stream()
+                    .map(pt -> pt.getTag().getName())
                     .toList();
 
             return new PostListResponse(post, tags);
@@ -188,12 +185,12 @@ public class PostService {
      */
     public Page<PostListResponse> getPostsByAuthor(Long authorId, Pageable pageable) {
         // 1. 해당 회원의 게시글 목록 조회
-        Page<Post> posts = postRepository.findByAuthorId(authorId, pageable);
+        Page<Post> posts = postRepository.findPostsByAuthorWithPaging(authorId, pageable);
 
         // 2. Post -> PostListResponse(DTO) 변환
         return posts.map(post -> {
-            List<String> tags = postTagRepository.findByPostId(post.getId()).stream()
-                    .map(postTag -> postTag.getTag().getName())
+            List<String> tags = post.getPostTags().stream()
+                    .map(pt-> pt.getTag().getName())
                     .toList();
 
             return new PostListResponse(post, tags);
