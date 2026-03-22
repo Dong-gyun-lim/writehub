@@ -93,6 +93,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .leftJoin(post.postTags, postTag).fetchJoin()
                 .leftJoin(postTag.tag, tag).fetchJoin()
                 .where(post.id.in(postIds))
+                .orderBy(post.createdAt.desc())
                 .fetch();
 
         //count 쿼리
