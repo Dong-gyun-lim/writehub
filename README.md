@@ -90,10 +90,11 @@ Member (1) ──< (N) Post
 Member (1) ──< (N) Follow ──> (1) Member (자기참조)
 Member (1) ──< (N) Subscription ──> (1) Member (자기참조)
 Post (N) ──< (N) Tag (PostTag 중간 테이블)
+Post (1) ──< (N) PostTag (양방향)
 ```
 
 ### 주요 설계 결정
-- **단방향 매핑**: Post → Member (양방향 매핑 복잡도 방지)
+- **단방향 매핑**: 기본적으로 단방향 설계를 유지하되, N+1 해결을 위해 Post → PostTag 방향에 한해 양방향 매핑 추가
 - **CASCADE**: Cascade 대신 Service Layer에서 명시적 삭제 로직으로 처리
 - **BaseTimeEntity**: 생성일/수정일 자동 관리 (@EnableJpaAuditing)
 
@@ -269,21 +270,25 @@ if (!currentTagSet.equals(newTagSet)) {
 
 **상황**: 게시글 목록 조회 시 각 게시글마다 태그 조회 쿼리 발생
 
-**선택**: default_batch_fetch_size: 100 적용으로 부분 최적화
+**1차 시도**: default_batch_fetch_size: 100 적용
+
+**결과**: 효과 없음
+- postTagRepository.findByPostId()는 Hibernate lazy loading이 아닌 명시적 Spring Data JPA 쿼리
+- Hibernate가 개입할 수 없는 구조라 batch_fetch_size가 작동하지 않음을 SQL 로그로 확인
+- 게시글 4개 조회 시 여전히 쿼리 10개 발생
+
+**2차 시도**: QueryDSL fetch join + 2단계 페이징으로 해결
 
 **이유**:
-- 한 페이지당 10~20개만 조회 (N이 작음)
-- 태그 개수도 적음 (게시글당 3~5개)
-- 조기 최적화(premature optimization) 방지
-- 실제 병목 확인 전까지 단순한 코드 유지
+- 페이지네이션 + fetch join 동시 적용 시 Hibernate가 전체 데이터를 메모리에 올리는 문제 발생
+- 2단계로 분리해서 해결
 
-**트레이드오프**:
-- 장점: 코드 단순, 유지보수 쉬움
-- 단점: 쿼리 수 증가 (페이지당 N+1개)
+**구현**:
+- Step 1: ID만 페이징 조회 (offset/limit 적용)
+- Step 2: 해당 ID로 post.author, post.postTags, postTag.tag fetch join
+- PageableExecutionUtils.getPage()로 불필요한 count 쿼리 생략
 
-**향후 개선**:
-- 트래픽 증가 시 fetch join으로 추가 최적화 예정
-- 또는 태그 정보 캐싱 (Redis)
+**결과**: getPosts, getPostsByAuthor, searchPosts 모두 쿼리 N+1개 → 2개로 감소
 
 ---
 
@@ -667,6 +672,29 @@ if(subscriberId.equals(creatorId)){
 
 ---
 
+### 11. 게시글 목록 N+1 문제
+
+**문제 상황**: 게시글 목록 조회 시 각 게시글마다 태그 조회 쿼리가 추가 발생
+
+**원인**:
+- postTagRepository.findByPostId()를 각 게시글마다 호출하는 구조
+- 게시글 4개 조회 시 쿼리 10개 발생
+
+**1차 시도**: default_batch_fetch_size: 100 적용 → 효과 없음
+- 명시적 Spring Data JPA 쿼리라 Hibernate가 개입 불가
+
+**해결**: QueryDSL fetch join + 2단계 페이징
+- Step 1: ID만 페이징 조회
+- Step 2: 해당 ID로 fetch join
+- 쿼리 10개 → 2개로 감소
+
+**배운 점**:
+- batch_fetch_size는 Hibernate lazy loading에만 적용됨
+- 페이지네이션 + fetch join은 2단계로 분리해야 함
+- PageableExecutionUtils로 불필요한 count 쿼리 생략 가능
+
+---
+
 ## 🚨 배포 트러블슈팅
 
 ### 1. AWS EC2 SSH 접속 무한 대기 (Hang) 현상
@@ -1004,6 +1032,7 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - [x] 프론트엔드 연동 (React + Vite)
 - [x] Vercel 배포
 - [x] 게시글 검색 API (Querydsl)
+- [x] N+1 문제 해결 (QueryDSL fetch join + 2단계 페이징) → 03/22
 
 **총 22개 API 완성**
 
@@ -1031,8 +1060,11 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 ### 중기 (v1.5)
 
 **1. N+1 문제 최적화 (완료 ✅)**
-- default_batch_fetch_size: 100 적용으로 IN절 일괄 조회로 개선
-- 향후 트래픽 증가 시 fetch join 추가 최적화 예정
+- SQL 로그 분석으로 게시글 4개 조회 시 쿼리 10개 발생 확인
+- default_batch_fetch_size 설정이 명시적 JPQL 쿼리 구조에서 효과 없음을 확인
+- Post 엔티티에 @OneToMany 양방향 매핑 추가 후 QueryDSL fetch join 적용
+- 2단계 페이징(ID 먼저 조회 → fetch join) 방식으로 페이지네이션 + fetch join 문제 해결
+- getPosts, getPostsByAuthor, searchPosts 3개 API 모두 쿼리 N+1개 → 2개로 감소
 
 **2. 조회수 시스템 개선**
 - Redis + 스케줄러 배치 처리
