@@ -1,5 +1,6 @@
 package com.writehub.global.exception;
 
+import com.writehub.global.common.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -9,17 +10,17 @@ public class GlobalExceptionHandler {
 
     // 우리가 만든 커스텀 예외 처리 (하나로 해결)
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
+    public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
         return ResponseEntity
                 .status(e.getStatus())
-                .body(new ErrorResponse(e.getStatus().name(), e.getMessage()));
+                .body(ApiResponse.error(e.getMessage()));
     }
 
     //예상치 못한 예외 처리
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+    public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
         return ResponseEntity
                 .internalServerError()
-                .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다"));
+                .body(ApiResponse.error("서버에 오류가 발생했습니다"));
     }
 }
