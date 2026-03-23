@@ -1033,6 +1033,8 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 - [x] Vercel 배포
 - [x] 게시글 검색 API (Querydsl)
 - [x] N+1 문제 해결 (QueryDSL fetch join + 2단계 페이징) → 03/22
+- [x] 공통 API 응답 포맷 ApiResponse 적용 → 03/23
+- [x] PostService 단위 테스트 작성 → 03/23
 
 **총 22개 API 완성**
 
@@ -1076,6 +1078,16 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 **4. 프로필 수정 API 추가** (완료 ✅ 03/09)
 - PATCH /api/members/me (username, bio)
 
+**5. 공통 API 응답 포맷 통일 (완료 ✅ 03/23)**
+- 모든 Controller 응답을 ApiResponse<T>로 통일
+- success / message / data 구조로 일관된 응답 포맷 확보
+- GlobalExceptionHandler 에러 응답도 ApiResponse.error()로 통일
+
+**6. 단위 테스트 작성 (진행 중)**
+- PostService 구독자 전용 게시글 접근 제어 테스트 작성
+- Mockito 기반 Mock 객체 활용, ReflectionTestUtils로 private 필드 주입
+- 향후 주요 비즈니스 로직 전반으로 테스트 커버리지 확대 예정
+
 ---
 
 ### 장기 (v2.0)
@@ -1087,7 +1099,6 @@ docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
 
 **2. 성능 최적화**
 - Redis 캐싱 (프로필 통계, 조회수)
-- Querydsl 도입 부분 완료 (검색 API) / 추가 최적화 예정
 - DB 인덱싱 최적화
 
 **3. 추가 기능**
