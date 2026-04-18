@@ -2,145 +2,53 @@
 
 창작자를 위한 구독 기반 기술 블로그 플랫폼
 
-## 📋 프로젝트 개요
+## 프로젝트 개요
 
-**개발 기간**: 2026.02.17 ~ 2026.02.21 (5일)
+| 항목 | 내용 |
+|------|------|
+| 개발 기간 | 2026.02.17 ~ 2026.03 |
+| 개발 인원 | 1인 (백엔드) |
+| 배포 서버 (백엔드) | http://43.203.179.195:8080 |
+| 배포 서버 (프론트) | https://writehub-front.vercel.app |
+| 테스트 계정 | admin@naver.com / admin1234 |
 
-**배포/개선**: 2026.02 ~ 2026.03
+**기획 의도**
 
-**개발 인원**: 1인 (백엔드)
-
-**배포 서버 (백엔드)**: http://43.203.179.195:8080
-
-**배포 서버 (프론트)**: https://writehub-front.vercel.app
-
-**API 테스트**: Postman Collection으로 확인 가능 (아래 참고)
-
-**기획 의도**:
-- 구독 기반 콘텐츠 플랫폼의 핵심 도메인 모델링
-- Spring Boot + JPA를 활용한 실전 프로젝트 경험
-- 연관관계 매핑, 페이징 처리, N+1 문제 등 실무 기술 적용
+구독 기반 콘텐츠 플랫폼의 핵심 도메인을 직접 설계하고 구현하는 것을 목표로 했습니다. Spring Boot + JPA 기반 실전 프로젝트를 통해 연관관계 매핑, 페이징 처리, N+1 문제 등 실무에서 마주치는 기술적 문제를 직접 해결하는 경험을 쌓았습니다.
 
 ---
 
-## 🎯 핵심 기능
+## 기술 스택
 
-### MVP (v1.0) - 완료
-- ✅ 회원 가입/로그인 (세션 기반)
-- ✅ 게시글 CRUD
-- ✅ 게시글 공개 범위 설정 (전체/구독자)
-- ✅ 팔로우/언팔로우
-- ✅ 무료 구독/구독 취소
-- ✅ 태그 기능
-- ✅ 조회수 기능
-- ✅ 게시글 검색 (키워드 / 태그)
-- ✅ 닉네임 / 프로필 수정
+**Backend**
+- Java 21, Spring Boot 3.5.10, Spring Data JPA, QueryDSL 5.0, MySQL 8.0
 
-### 향후 확장 계획 (v2.0)
-- 🔜 Spring Security + JWT 인증
-- 🔜 좋아요 기능
-- 🔜 댓글 기능
-- 🔜 PG 결제 연동 (유료 구독)
-- 🔜 정산 시스템 (Spring Batch)
+**Frontend**
+- React 19, Vite 7, Vercel
+
+**Infrastructure**
+- AWS EC2 (Amazon Linux 2023, t3.micro), AWS RDS (MySQL 8.4, db.t4g.micro)
+- Docker / DockerHub, GitHub Actions
+
+**Authentication**
+- BCrypt 비밀번호 암호화, 세션 기반 인증
 
 ---
 
-## 🛠 기술 스택
+## 핵심 기능
 
-### Frontend
-- React 19
-- Vite 7
-- Vercel (배포)
-
-### Backend
-- Java 21
-- Spring Boot 3.5.10
-- Spring Data JPA
-- MySQL 8.0
-- Querydsl 5.0
-
-### Infrastructure
-- AWS EC2 (Amazon Linux 2023, t3.micro)
-- AWS RDS (MySQL 8.4, db.t4g.micro)
-- Docker / DockerHub
-
-### CI/CD
-- GitHub Actions (push → 자동 빌드 및 배포)
-- Docker (컨테이너 기반 배포)
-
-### Authentication
-- BCrypt 비밀번호 암호화
-- 세션 기반 인증
+- 회원 가입 / 로그인 (세션 기반)
+- 게시글 CRUD, 공개 범위 설정 (전체 / 구독자 전용)
+- 팔로우 / 언팔로우
+- 구독 / 구독 취소
+- 태그 기반 게시글 관리
+- 키워드 / 태그 게시글 검색 (QueryDSL 동적 쿼리)
+- 조회수 기능 (본인 제외)
+- 닉네임 / 프로필 수정
 
 ---
 
-## 📊 ERD
-
-### 핵심 엔티티
-- **Member** (회원)
-- **Post** (게시글)
-- **Follow** (팔로우)
-- **Subscription** (구독)
-- **Tag** (태그)
-- **PostTag** (게시글-태그 중간 테이블)
-
-### 연관관계
-```
-Member (1) ──< (N) Post
-Member (1) ──< (N) Follow ──> (1) Member (자기참조)
-Member (1) ──< (N) Subscription ──> (1) Member (자기참조)
-Post (N) ──< (N) Tag (PostTag 중간 테이블)
-Post (1) ──< (N) PostTag (양방향)
-```
-
-### 주요 설계 결정
-- **단방향 매핑**: 기본적으로 단방향 설계를 유지하되, N+1 해결을 위해 Post → PostTag 방향에 한해 양방향 매핑 추가
-- **CASCADE**: Cascade 대신 Service Layer에서 명시적 삭제 로직으로 처리
-- **BaseTimeEntity**: 생성일/수정일 자동 관리 (@EnableJpaAuditing)
-
----
-
-## 📁 패키지 구조
-```
-com.writehub
-├── domain
-│   ├── member
-│   │   ├── entity/
-│   │   ├── repository/
-│   │   ├── service/
-│   │   ├── controller/
-│   │   └── dto/
-│   ├── post
-│   │   ├── entity/
-│   │   ├── repository/
-│   │   ├── service/
-│   │   ├── controller/
-│   │   └── dto/
-│   ├── follow
-│   │   ├── entity/
-│   │   ├── repository/
-│   │   ├── service/
-│   │   ├── controller/
-│   │   └── dto/
-│   ├── subscription
-│   │   ├── entity/
-│   │   ├── repository/
-│   │   ├── service/
-│   │   ├── controller/
-│   │   └── dto/
-│   └── tag
-│       ├── entity/
-│       └── repository/
-└── global
-    ├── common/
-    ├── config/
-    ├── exception/
-    └── util/
-```
-
----
-
-## 🔗 API 명세
+## API 명세
 
 ### 회원 (Member) - 7개
 
@@ -188,40 +96,106 @@ com.writehub
 
 ---
 
-## 🧪 API 테스트
+## ERD
 
-### Postman Collection
-- [Postman Collection 다운로드](postman/WriteHubAPI.postman_collection.json)
-- Import 후 바로 테스트 가능
+```
+Member (1) ──< (N) Post
+Member (1) ──< (N) Follow ──> (1) Member (자기참조)
+Member (1) ──< (N) Subscription ──> (1) Member (자기참조)
+Post (N) ──< (N) Tag (PostTag 중간 테이블)
+Post (1) ──< (N) PostTag (양방향)
+```
 
-### 주요 테스트 캡쳐
-- [회원가입 성공](docs/member/회원가입.png)
-- [로그인 성공](docs/member/로그인.png)
-- [게시글 작성](docs/post/게시글작성.png)
-- [구독자 전용 게시글 권한 체크](docs/post/구독자게시글조회.png)
-- [팔로우 성공](docs/follow/팔로우.png)
-- [구독 성공](docs/subscription/구독.png)
+**주요 설계 결정**
+- 기본적으로 단방향 매핑을 유지하되, N+1 해결을 위해 Post → PostTag 방향에 한해 양방향 매핑 추가
+- CASCADE 대신 Service Layer에서 명시적 삭제 순서를 관리해 외래 키 제약 조건 에러 방지
+- BaseTimeEntity로 생성일 / 수정일 자동 관리
 
 ---
 
-## 💡 기술적 의사결정
+## 패키지 구조
 
-### 1. 게시글 태그 수정 전략
+```
+com.writehub
+├── domain
+│   ├── member (entity / repository / service / controller / dto)
+│   ├── post   (entity / repository / service / controller / dto)
+│   ├── follow (entity / repository / service / controller / dto)
+│   ├── subscription (entity / repository / service / controller / dto)
+│   └── tag    (entity / repository)
+└── global
+    ├── common
+    ├── config
+    ├── exception
+    └── util
+```
 
-**상황**: 게시글 수정 시 태그를 어떻게 업데이트할 것인가?
+---
 
-**선택**: 전체 삭제 후 재생성 + 변경 감지
+## 기술적 의사결정
 
-**이유**:
-- 태그는 보통 3~5개로 적음 (성능 차이 미미)
-- 코드 가독성과 유지보수성 우선
-- 변경 감지로 불필요한 재생성 방지
+### 1. 게시글 목록 N+1 문제 해결
 
-**구현**:
+**문제 상황**
+
+초기 설계는 단방향 매핑으로 `postTagRepository.findByPostId()`를 각 게시글마다 호출하는 구조였습니다. 게시글 4개 조회 시 총 10개의 쿼리가 발생했습니다.
+
+- 게시글 목록 조회 1개
+- 작성자 조회 1개
+- post_tag 조회 4개 (게시글당 1개)
+- tag IN절 조회 4개 (게시글당 1개)
+
+**1차 시도 - batch_fetch_size 적용**
+
+`default_batch_fetch_size: 100` 설정을 적용했으나 효과 없음을 SQL 로그로 확인했습니다. `findByPostId()`는 Hibernate lazy loading이 아닌 명시적 Spring Data JPA 쿼리라 Hibernate가 개입할 수 없는 구조였습니다.
+
+**2차 시도 - QueryDSL fetch join + 2단계 페이징**
+
+페이지네이션 + fetch join 동시 적용 시 Hibernate가 전체 데이터를 메모리에 올리는 문제가 발생해 2단계로 분리했습니다.
+
+- Step 1: ID만 페이징 조회 (offset / limit 적용)
+- Step 2: 해당 ID로 author, postTags, tag fetch join
+- `PageableExecutionUtils.getPage()`로 마지막 페이지 count 쿼리 생략
+
+**결과**: `getPosts`, `getPostsByAuthor`, `searchPosts` 3개 API 모두 쿼리 10개 → 2개로 감소
+
+**k6 부하테스트 성능 검증**
+
+동일 환경(로컬, 50 VUs, 10분)에서 전후 비교 측정했습니다.
+
+| 항목 | N+1 발생 (최적화 전) | fetch join 적용 (최적화 후) |
+|------|------|------|
+| 평균 응답시간 | 52.14ms | 16.88ms |
+| p(95) | 78.5ms | 32.63ms |
+| TPS | 768/s | 2,370/s |
+| 총 처리 요청 | 38,442 | 118,514 |
+| 에러율 | 0% | 0% |
+
+동일 환경 기준 평균 응답시간 **67% 감소**, TPS **3배 향상**
+
+**배포 서버(EC2 t3.micro) 부하 한계 테스트**
+
+| 항목 | 50 VUs | 100 VUs |
+|------|------|------|
+| 평균 응답시간 | 76.1ms | 166.06ms |
+| p(95) | 160.57ms | 370.59ms |
+| TPS | 525/s | 481/s |
+| 최대 응답시간 | 729ms | 5.92s |
+| 에러율 | 0% | 0% |
+
+100 VUs에서 TPS가 오히려 감소하고 최대 응답시간이 5.92초까지 치솟는 것을 확인했습니다. EC2 t3.micro 환경에서 50 VUs 근처가 포화점임을 직접 검증했습니다. 향후 스케일 아웃 또는 캐싱 도입으로 개선 가능한 지점입니다.
+
+---
+
+### 2. 게시글 태그 수정 전략
+
+태그 수정 시 전체 삭제 후 재생성 + Set 비교 방식을 선택했습니다.
+
+태그 수가 3~5개로 적어 성능 차이가 미미하고, 부분 업데이트 방식은 추가/삭제/유지 3가지 분기를 처리해야 해 코드 복잡도가 높아집니다. Set 비교를 사용하면 순서와 관계없이 태그 변경 여부만 정확하게 판단할 수 있습니다.
+
+JPA 쓰기 지연(write-behind) 특성으로 DELETE/INSERT 순서가 보장되지 않아 `Duplicate entry` 에러가 발생했고, `flush()`로 DELETE를 즉시 실행해 순서를 보장했습니다.
+
 ```java
-Set<String> currentTagSet = new HashSet<>(currentTags);
-Set<String> newTagSet = new HashSet<>(newTags);
-
 if (!currentTagSet.equals(newTagSet)) {
     postTagRepository.deleteByPostId(postId);
     postTagRepository.flush();  // 즉시 DELETE 실행
@@ -229,678 +203,133 @@ if (!currentTagSet.equals(newTagSet)) {
 }
 ```
 
-**향후 개선**: 태그 개수가 많아지면 Batch Update 고려
+---
+
+### 3. 인증 방식 - BCrypt + 세션
+
+MVP 단계에서는 구독/팔로우/공개 권한 같은 핵심 도메인 로직 구현에 집중하기 위해 세션 기반 인증을 선택했습니다. Spring Security + JWT는 Refresh Token 관리, Redis 연동 등 추가 설계가 필요해 우선 순위를 조정했습니다.
+
+세션 방식의 한계(Stateful, 수평 확장 어려움)를 인지하고 있으며, 향후 Spring Security + JWT + Refresh Token 방식으로 전환할 예정입니다.
 
 ---
 
-### 2. 인증 방식: BCrypt + 세션
+### 4. 구독 기반 접근 제어
 
-**선택**: BCrypt + 세션 기반 인증
+`Visibility` enum으로 공개 범위를 `PUBLIC` / `SUBSCRIBER_ONLY` 두 타입으로 관리했습니다.
 
-**이유**:
-- 빠른 MVP 구현 (Security 학습 시간 절약, 핵심 기능 집중)
-- BCrypt는 비밀번호 저장을 위한 업계 표준 해시 알고리즘
-- 설정이 간단하고 안정적
+`SUBSCRIBER_ONLY` 게시글 조회 시 ①로그인 여부 → ②본인 여부 → ③구독 여부 순으로 체크하는 3단계 접근 제어를 Service Layer에서 명시적으로 구현했습니다. 비로그인(401) / 미구독(403)을 HTTP 상태코드에 맞게 분리해서 응답합니다.
 
-**트레이드오프**:
-- 장점: 빠른 개발, 안정적, 학습곡선 낮음
-- 단점: Stateful, 확장성 제한
-
-**향후 개선**: Spring Security + JWT + Refresh Token
+팔로우(관심 표시)와 구독(콘텐츠 접근권)을 별도 개념으로 분리해 창작자가 콘텐츠 전략을 유연하게 가져갈 수 있도록 설계했습니다. 현재는 무료 구독만 구현되어 있으며, 향후 PG 결제 연동으로 유료 구독 모델로 확장 가능한 구조입니다.
 
 ---
 
-### 3. ResponseEntity 사용
+### 5. 배포 자동화 - Docker + GitHub Actions CI/CD
 
-**선택**: ResponseEntity로 HTTP 상태 코드 제어
+초기에는 EC2에서 직접 Gradle 빌드 후 nohup으로 실행하는 방식을 사용했습니다. 두 가지 문제가 있었습니다.
 
-**이유**:
-- RESTful API 원칙에 맞게 자원(Resource) 중심 URL과
-  HTTP Method(GET, POST, PUT, DELETE)를 사용하여 API를 설계함
-- ResponseEntity를 사용하여 HTTP 상태 코드를 명확하게 반환하도록 구현함
-- 향후 헤더 추가나 에러 응답 커스터마이징에 유연하게 대응 가능
+첫째, t3.micro 환경(1GB RAM)에서 빌드 시간이 13분 이상 소요되며 GitHub Actions SSH 연결이 끊기는 타임아웃이 발생했습니다.
 
-**트레이드오프**:
-- 장점: 명확한 의도 표현, RESTful 원칙 준수
-- 단점: 코드 길이 약간 증가 (trade-off 가치 있음)
+둘째, M4 MacBook(ARM)에서 빌드한 이미지가 EC2(x86_64)에서 `no matching manifest for linux/amd64` 에러로 실행되지 않는 아키텍처 불일치 문제가 있었습니다.
+
+**해결**: GitHub Actions에서 빌드를 처리하고 EC2는 실행만 담당하는 역할 분리 구조로 변경했습니다. `--platform linux/amd64` 옵션으로 ARM에서 빌드하더라도 EC2에서 실행 가능한 이미지를 생성했습니다.
+
+**결과**: 배포 시간 13분 이상 → 1~2분으로 단축, git push만으로 빌드 → DockerHub push → EC2 pull → 배포까지 자동화
 
 ---
 
-### 4. 게시글 목록 조회 N+1 문제
+### 6. OOP 원칙 적용 - 엔티티 캡슐화 + 커스텀 예외 계층
 
-**상황**: 게시글 목록 조회 시 각 게시글마다 태그 조회 쿼리 발생
+`@NoArgsConstructor(access = AccessLevel.PROTECTED)`로 직접 생성을 차단하고, 정적 팩토리 메서드(`createPost()`, `createMember()`)를 통해서만 객체를 생성하도록 강제했습니다.
 
-**1차 시도**: default_batch_fetch_size: 100 적용
+모든 필드를 private으로 두고 `increaseViewCount()`, `updateProfile()` 같은 비즈니스 의미가 담긴 메서드를 통해서만 값을 변경합니다. `@Setter`는 사용하지 않습니다.
 
-**결과**: 효과 없음
-- postTagRepository.findByPostId()는 Hibernate lazy loading이 아닌 명시적 Spring Data JPA 쿼리
-- Hibernate가 개입할 수 없는 구조라 batch_fetch_size가 작동하지 않음을 SQL 로그로 확인
-- 게시글 4개 조회 시 여전히 쿼리 10개 발생
-
-**2차 시도**: QueryDSL fetch join + 2단계 페이징으로 해결
-
-**이유**:
-- 페이지네이션 + fetch join 동시 적용 시 Hibernate가 전체 데이터를 메모리에 올리는 문제 발생
-- 2단계로 분리해서 해결
-
-**구현**:
-- Step 1: ID만 페이징 조회 (offset/limit 적용)
-- Step 2: 해당 ID로 post.author, post.postTags, postTag.tag fetch join
-- PageableExecutionUtils.getPage()로 불필요한 count 쿼리 생략
-
-**결과**: getPosts, getPostsByAuthor, searchPosts 모두 쿼리 N+1개 → 2개로 감소
+`CustomException`을 abstract 클래스로 만들어 `NotFoundException(404)`, `BadRequestException(400)`, `UnauthorizedException(401)`, `ForbiddenException(403)`, `DuplicateException(409)`로 상황별 예외를 분리했습니다. `GlobalExceptionHandler`에서 `@ExceptionHandler(CustomException.class)` 하나로 모든 자식 예외를 처리합니다.
 
 ---
 
-### 5. 프로필 조회 Count 쿼리
+### 7. v1.1 리팩토링 - ArgumentResolver + 세션 상수화
 
-**상황**: 회원 프로필 조회 시 5개 쿼리 발생 (follower, following, post, subscriber count)
+v1.0 완료 후 세션에서 memberId를 꺼내는 코드가 모든 Controller에 반복되는 문제를 발견했습니다. `HandlerMethodArgumentResolver`를 구현한 `LoginMemberArgumentResolver`와 `@LoginMember` 어노테이션으로 memberId를 파라미터로 자동 주입받는 구조로 개선했습니다.
 
-**선택**: 실시간 COUNT 쿼리
-
-**이유**:
-- 프로필 조회 빈도가 높지 않음
-- 항상 최신 데이터 반영
-- 코드 복잡도 최소화
-- 실제 성능 문제 발생 시 개선
-
-**향후 개선**:
-- 프로필 조회가 많아지면 Redis 캐싱 도입
-- TTL 5분 정도로 설정해서 준실시간 통계
+매직 스트링 `"memberId"`를 `SessionConst.MEMBER_ID` 상수로 교체해 오타로 인한 런타임 에러를 컴파일 시점에 방지했습니다.
 
 ---
 
-### 6. 조회수 증가 방식
+## 트러블슈팅
 
-**선택**: 조회 즉시 증가 (본인 제외)
+### 1. SSH 접속 무한 대기 (Hang) 현상
 
-**이유**:
-- 구현 간단
-- 조회 시 즉시 증가 방식
-- 블로그 조회수는 대략적인 수치면 충분
-- 트래픽이 초기엔 동시 요청 많지 않음
+최신 맥북 OpenSSH 10.x 버전이 SSH 패킷에 IPQoS 태그를 붙여 전송하는데, 일부 통신사 네트워크 장비에서 해당 태그를 비정상 트래픽으로 판단해 차단하는 문제였습니다. 서버 문제가 아닌 네트워크 레벨의 패킷 드랍이었습니다.
 
-**트레이드오프**:
-- 장점: 구현이 간단하고 조회 시 즉시 증가 방식
-- 단점: 새로고침 시 증가, 정확도 낮음
-**향후 개선**:
-- Redis + 스케줄러로 배치 처리
-- 같은 사용자 중복 체크 (24시간 단위)
-
----
-
-### 7. 공개 범위: 구독 기반
-
-**선택**: 구독자 + 작성자 본인만 조회 가능
-
-**이유**:
-- 구독 기반 콘텐츠 플랫폼의 비즈니스 모델 구현
-- 팔로우는 가벼운 관심 표시 (알림/피드용)
-- 구독은 실제 콘텐츠 접근 권한 (수익 모델과 연결)
-
-**구현**:
-```java
-if (post.getVisibility() == Visibility.SUBSCRIBER_ONLY) {
-    if (viewerId == null || 
-        (!post.getAuthor().getId().equals(viewerId) &&
-         !subscriptionRepository.exists(...))) {
-        throw new ForbiddenException("구독자만 볼 수 있는 게시글입니다");
-    }
-}
-```
-
-**향후 개선**: Visibility enum 이름 변경 (FOLLOWER_ONLY → SUBSCRIBER_ONLY)
-
----
-
-### 8. 배포 방식: nohup jar → Docker 컨테이너
-
-**상황**: EC2 배포 방식을 어떻게 할 것인가?
-
-**선택**: Docker 컨테이너 기반 배포
-
-**이유**:
-- nohup 방식은 EC2 환경에 직접 의존 (Java 버전, 경로 등)
-- Docker는 환경에 관계없이 동일한 실행 환경 보장
-- 이미지 버전 관리 가능 (DockerHub)
-- 컨테이너 교체만으로 무중단에 가까운 배포 가능
-
-**트레이드오프**:
-- 장점: 환경 일관성, 이식성, 버전 관리
-- 단점: Docker 학습 비용, 이미지 빌드 시간 증가
-
-**향후 개선**:
-- Docker Compose로 멀티 컨테이너 관리
-- 무중단 배포 (Blue/Green 또는 Rolling Update)
-
----
-
-## 🐞 개발 중 발견한 버그와 해결
-
-### 1. 게시글 수정 시 태그 반환값 오류
-
-**문제 상황**:
-```java
-// 요청에 tags 필드가 없을 때
-PUT /api/posts/1
-{
-  "title": "제목만 수정",
-  "content": "내용"
-  // tags 없음
-}
-```
-
-**문제점**: 태그를 수정하지 않았는데 응답에서 태그가 사라짐
-
-**원인**:
-```java
-List<String> newTags = request.getTags() != null ? request.getTags() : List.of();
-return new PostResponse(post, newTags);  // 빈 리스트 반환!
-```
-
-**해결**:
-```java
-return new PostResponse(post, 
-    currentTagSet.equals(newTagSet) ? currentTags : newTags);
-```
-
-**배운 점**: null = "수정 안 함" vs [] = "전부 삭제" 명확히 구분
-
----
-
-### 2. 태그 순서 변경 시 불필요한 재생성
-
-**문제**:
-```java
-currentTags = ["Spring", "Java"]
-newTags = ["Java", "Spring"]  // 순서만 바뀜
-
-currentTags.equals(newTags)  → false
-// 삭제/재생성 실행됨! (불필요)
-```
-
-**해결**: Set 비교로 순서 무시
-```java
-Set<String> currentTagSet = new HashSet<>(currentTags);
-Set<String> newTagSet = new HashSet<>(newTags);
-```
-
-**배운 점**: 비즈니스 요구사항에 맞는 자료구조 선택 중요
-
----
-
-### 3. Validation 설정 오류
-
-**문제 상황**: 회원가입 시 계속 400 Bad Request 발생
-
-**원인**:
-```java
-@Size(min = 50, max = 50)  // 오타!
-private String username;
-```
-
-**문제점**:
-- `min = 50`으로 설정해서 최소 50자를 요구
-- 일반적인 이름은 2~10자인데 50자 이상만 허용
-- "임동균" (3글자) → Validation 실패
-
-**해결**:
-```java
-@Size(max = 50)
-@NotBlank
-private String username;
-```
-
-**배운 점**:
-- Validation 어노테이션 설정 시 비즈니스 요구사항 확인 필요
-- 에러 메시지만 보고 넘기지 말고 로직 재검토
-- 테스트 데이터로 실제 시나리오 검증 중요
-
----
-
-### 4. JPA Auditing 미활성화
-
-**문제**: createdAt, updatedAt이 null로 저장됨
-
-**원인**: `@EnableJpaAuditing` 설정 누락
-
-**해결**:
-```java
-@EnableJpaAuditing  // 추가!
-@SpringBootApplication
-public class WritehubApplication {
-    // ...
-}
-```
-
-**배운 점**: BaseTimeEntity 작성만으로는 부족, 명시적 활성화 필요
-
----
-
-### 5. 조회수 증가 시 updatedAt 변경
-
-**현재 동작**:
-- 게시글 조회 시 조회수 증가
-- 조회수 증가 시 updatedAt도 함께 변경됨
-
-**원인**:
-- JPA 변경 감지로 UPDATE 쿼리 실행
-- BaseTimeEntity의 @LastModifiedDate가 자동 갱신
-
-**향후 개선**:
-```java
-// @Modifying 쿼리로 viewCount만 증가
-@Modifying
-@Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
-void incrementViewCount(@Param("postId") Long postId);
-```
-- 또는 Redis 배치 처리로 전환
-
----
-
-### 6. 본인 게시글 조회 시 조회수 증가
-
-**초기 구현**: 모든 조회 시 무조건 조회수 증가
-
-**문제점**:
-- 작성자가 본인 글을 여러 번 확인하면 조회수가 계속 올라감
-- 실제 방문자 수와 다른 부정확한 통계
-
-**개선**:
-```java
-// 본인이 아닐 때만 조회수 증가
-if (viewerId == null || !post.getAuthor().getId().equals(viewerId)) {
-    post.increaseViewCount();
-}
-```
-
-**효과**:
-- 작성자 본인: 조회수 증가 X
-- 다른 사람: 조회수 증가 O
-- 비로그인 사용자: 조회수 증가 O
-
-**향후 개선**:
-- IP 기반 중복 체크 (24시간)
-- Redis 캐싱으로 배치 처리
-
----
-
-### 7. 게시글 수정 시 태그 중복 키 에러
-
-**문제 상황**: 게시글 수정 시 `Duplicate entry '1-1' for key 'post_tag'` 에러 발생
-
-**원인**:
-```java
-if (!currentTagSet.equals(newTagSet)) {
-    postTagRepository.deleteByPostId(postId);  // DELETE 명령
-    saveTags(post, newTags);  // INSERT 명령
-}
-// 트랜잭션 커밋 시 쿼리 실행 순서가 보장 안 됨
-// → INSERT가 먼저 실행되면 중복 키 에러!
-```
-
-JPA는 트랜잭션 커밋 시점에 쿼리를 실행하는데, INSERT와 DELETE의 순서가 보장되지 않아 INSERT가 먼저 실행되면 기존 데이터와 충돌
-
-**해결**:
-```java
-if (!currentTagSet.equals(newTagSet)) {
-    postTagRepository.deleteByPostId(postId);
-    postTagRepository.flush();  // ← 즉시 DELETE 실행!
-    saveTags(post, newTags);
-}
-```
-
-**배운 점**:
-- JPA의 쓰기 지연(write-behind) 특성 이해
-- flush()를 통한 즉시 실행 제어
-- 트랜잭션 내 쿼리 실행 순서의 중요성
-
----
-
-### 8. 게시글 삭제 시 외래 키 제약 조건 에러
-
-**문제 상황**: 게시글 삭제 시 `Cannot delete or update a parent row: a foreign key constraint fails` 에러 발생
-
-**원인**:
-```java
-// PostTag가 Post를 참조하고 있음
-postRepository.delete(post);  
-// → PostTag가 남아있어서 삭제 불가!
-```
-
-ERD 설계 시 CASCADE 설정을 계획했으나, 실제 구현에서 누락됨
-- JPA에 Cascade 설정 안 함 (단방향 매핑 사용)
-- DB에도 ON DELETE CASCADE 설정 안 함
-
-**해결**:
-```java
-@Transactional
-public void deletePost(Long postId, Long authorId) {
-    Post post = postRepository.findById(postId).orElseThrow();
-    
-    // 작성자 확인
-    if (!post.getAuthor().getId().equals(authorId)) {
-        throw new ForbiddenException("본인의 게시글만 삭제할 수 있습니다");
-    }
-    
-    // 1. PostTag 먼저 삭제 (자식)
-    postTagRepository.deleteByPostId(postId);
-    
-    // 2. Post 삭제 (부모)
-    postRepository.delete(post);
-}
-```
-
-**배운 점**:
-- 외래 키 관계에서 삭제 순서의 중요성
-- CASCADE 설정의 필요성 인지
-- Service 레이어에서 명시적 삭제 순서 관리
-- 설계와 구현 사이의 간극 확인 필요
-
-**설계 결정**:
-- JPA Cascade 대신 Service에서 명시적 처리 선택
-- 이유: 단방향 매핑 유지, 삭제 로직 명확성
-- 향후: 회원 삭제 등 복잡한 케이스에서도 동일 패턴 적용 예정
-
----
-
-### 9. 파라미터 순서 실수
-
-**문제 상황**: 여러 메서드에서 파라미터 순서를 잘못 전달하여 런타임 에러 발생
-
-**사례 1: 게시글 삭제**
-```java
-// 잘못된 호출
-postService.deletePost(authorId, postId);  // 순서 반대!
-
-// 올바른 호출
-postService.deletePost(postId, authorId);
-```
-
-**사례 2: 구독 취소 응답**
-```java
-// 잘못된 응답
-return new SubscriptionResponse(subscription.getId(), subscriberId, creatorId);
-// → 3개 파라미터 = "구독 성공" 생성자 호출!
-
-// 올바른 응답
-return new SubscriptionResponse(subscriberId, creatorId);
-// → 2개 파라미터 = "구독 취소 성공" 생성자 호출
-```
-
-**원인**:
-- 비슷한 타입(Long)의 파라미터가 여러 개
-- 컴파일 시점에 에러 없음 (타입은 맞음)
-- 런타임에서만 논리 오류 발견
-
-**배운 점**:
-- 파라미터 순서에 주의
-- 메서드 명명 규칙 일관성 유지 (postId 항상 먼저 등)
-- 빌더 패턴 또는 DTO 파라미터 고려
-- 단위 테스트의 중요성
-
-**향후 개선**:
-- 파라미터가 3개 이상이면 DTO로 래핑
-- 메서드 네이밍 컨벤션 문서화
-
----
-
-### 10. 자기 자신 언팔로우, 구독 취소 방지 누락
-
-**문제**:
-- 팔로우에는 자기 자신 방지 로직이 있었으나 언팔로우에는 누락
-- 구독에는 자기 자신 방지 로직이 있었으나 구독 취소에는 누락
-
-**해결**:
-```java
-//언팔로우
-if(followerId.equals(followingId)){
-    throw new BadRequestException("자기 자신은 언팔로우할 수 없습니다");
-}
-```
-
-```java
-// 구독 취소
-if(subscriberId.equals(creatorId)){
-    throw new BadRequestException("자기 자신은 구독 취소할 수 없습니다");
-}
-```
-**배운 점**: 
-- 구독/구독취소, 팔로우/언팔로우처럼 대칭되는 기능은
-항상 같은 검증 로직이 적용되는지 확인 필요
-- 실수를 좀 줄여보기
-
----
-
-### 11. 게시글 목록 N+1 문제
-
-**문제 상황**: 게시글 목록 조회 시 각 게시글마다 태그 조회 쿼리가 추가 발생
-
-**원인**:
-- postTagRepository.findByPostId()를 각 게시글마다 호출하는 구조
-- 게시글 4개 조회 시 쿼리 10개 발생
-
-**1차 시도**: default_batch_fetch_size: 100 적용 → 효과 없음
-- 명시적 Spring Data JPA 쿼리라 Hibernate가 개입 불가
-
-**해결**: QueryDSL fetch join + 2단계 페이징
-- Step 1: ID만 페이징 조회
-- Step 2: 해당 ID로 fetch join
-- 쿼리 10개 → 2개로 감소
-
-**배운 점**:
-- batch_fetch_size는 Hibernate lazy loading에만 적용됨
-- 페이지네이션 + fetch join은 2단계로 분리해야 함
-- PageableExecutionUtils로 불필요한 count 쿼리 생략 가능
-
----
-
-## 🚨 배포 트러블슈팅
-
-### 1. AWS EC2 SSH 접속 무한 대기 (Hang) 현상
-
-**문제 상황**
-- EC2 인스턴스에 SSH 접속 시 에러 메시지 없이 터미널 커서만 깜빡이며 무한 대기
-
-**원인**
-- 최신 맥북의 OpenSSH 10.x 버전은 SSH 패킷에 IPQoS(Quality of Service) 태그를 기본으로 붙여서 전송
-- 일부 통신사 네트워크 장비에서 해당 태그를 비정상 트래픽으로 판단하여 패킷을 중간에서 차단
-- 서버 문제가 아닌 로컬 ↔ 서버 사이의 네트워크 단절 문제
-
-**해결**
 ```bash
-# IPQoS 태그 없이 접속
 ssh -i ~/.ssh/writehub-server.pem -o IPQoS=none ec2-user@[EC2_IP]
 ```
 
-**영구 적용 (SSH Config 설정)**
-```bash
-echo "Host *" >> ~/.ssh/config
-echo "  IPQoS none" >> ~/.ssh/config
-```
-
-**배운 점**
-- SSH 접속 문제가 항상 서버/보안그룹 문제는 아님
-- 네트워크 레벨의 패킷 드랍도 원인이 될 수 있음
-- `-o` 옵션으로 SSH 동작을 세밀하게 제어 가능
-
 ---
 
-### 2. Gradle Toolchain - JDK를 찾지 못하는 문제
+### 2. Gradle Toolchain JDK 인식 불가
 
-**문제 상황**
-- EC2에 Java 설치 후 `./gradlew bootJar` 실행 시 빌드 실패
-- `Toolchain installation does not provide the required capabilities: [JAVA_COMPILER]` 에러 발생
+EC2에서 `./gradlew bootJar` 실행 시 `Toolchain installation does not provide the required capabilities: [JAVA_COMPILER]` 에러가 발생했습니다. JRE(실행)는 설치되어 있었으나 JDK(컴파일) devel 패키지가 누락된 문제였습니다.
 
-**원인**
-- `build.gradle`의 `java { toolchain { } }` 설정이 Gradle에게 JDK를 자동으로 찾거나 다운받으라고 지시
-- EC2 환경에서는 외부 다운로드가 차단되어 JDK를 찾지 못함
-- `java-21-amazon-corretto`만 설치되어 있었고 컴파일러가 포함된 `devel` 패키지가 없었음
-
-**해결**
 ```bash
-# JDK devel 패키지 설치
 sudo dnf install java-21-amazon-corretto-devel -y
 ```
-
-**배운 점**
-- JRE(실행)와 JDK(컴파일)의 차이
-- Gradle toolchain은 로컬 개발 환경에 적합하고 서버 배포 시 명시적 설정이 안정적
 
 ---
 
 ### 3. Unknown database 'writehub' 에러
 
-**문제 상황**
-- 서버 실행 시 `Unknown database 'writehub'` 에러로 애플리케이션 시작 실패
+RDS는 MySQL 서버(인스턴스)를 생성하지만 실제 사용할 데이터베이스(schema)는 직접 생성해야 합니다.
 
-**원인**
-- RDS는 DB 인스턴스(MySQL 서버)를 생성하지만, 실제 사용할 데이터베이스(schema)는 직접 생성해야 함
-
-**해결**
 ```sql
 CREATE DATABASE writehub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-**배운 점**
-- RDS 생성 ≠ 데이터베이스 생성
-- MySQL 서버와 데이터베이스(스키마)는 별개의 개념
-
 ---
 
-### 4. Spring Boot에서 ~ (틸드) 경로 인식 불가
+### 4. Spring Boot 틸드(~) 경로 인식 불가
 
-**문제 상황**
-- `--spring.config.location=file:~/application.yml` 설정 후 서버 실행 시 실패
-- `Config data resource 'file [~/application.yml]' does not exist` 에러 발생
+`~`는 bash 쉘에서만 `/home/ec2-user`로 변환됩니다. Spring Boot는 쉘이 아니기 때문에 `~`를 문자 그대로 인식합니다. 절대 경로로 변경해 해결했습니다.
 
-**원인**
-- `~`(틸드)는 bash 쉘에서만 `/home/ec2-user`로 변환됨
-- Spring Boot는 쉘이 아니기 때문에 `~`를 문자 그대로 인식
-- 즉 `~`라는 이름의 디렉토리를 찾으려다 실패
-
-**해결**
 ```bash
-# 틸드(~) 대신 절대 경로 사용
-java -jar /home/ec2-user/build/libs/writehub-0.0.1-SNAPSHOT.jar \
-  --spring.config.location=file:/home/ec2-user/application.yml
+--spring.config.location=file:/home/ec2-user/application.yml
 ```
-
-**배운 점**
-- `~`는 쉘 전용 문법, JVM 프로세스에는 통하지 않음
-- Spring Boot 경로 설정은 항상 절대 경로 사용
 
 ---
 
 ### 5. GitHub Actions 빌드 타임아웃
 
-**문제 상황**
-- EC2에서 직접 빌드 시 GitHub Actions 타임아웃 발생
-- t3.micro 메모리 부족으로 Gradle 빌드가 10분 이상 소요
-
-**원인**
-- t3.micro는 RAM 1GB로 Gradle 빌드하기엔 부족
-- GitHub Actions SSH 연결이 빌드 완료 전에 끊김
-
-**해결**
-- EC2에서 빌드하는 방식 → GitHub Actions에서 빌드 후 jar만 EC2로 전송하는 방식으로 변경
-```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest  # GitHub 서버에서 빌드
-    steps:
-      - name: Gradle 빌드
-        run: ./gradlew bootJar
-      - name: jar 파일 EC2로 전송
-        uses: appleboy/scp-action@master
-```
-
-**배운 점**
-- 빌드는 리소스가 충분한 GitHub Actions 서버에서
-- EC2는 실행만 담당하는 역할 분리
-- t3.micro 같은 저사양 서버에서는 빌드 부담을 줄여야 함
-
-**현재 방식**
-- 이후 Docker 기반 배포로 전환 (트러블슈팅 6번 참고)
+t3.micro(1GB RAM)에서 Gradle 빌드 시 메모리 부족으로 13분 이상 소요되며 SSH 연결이 끊기는 문제였습니다. GitHub Actions에서 빌드 후 Docker 이미지를 DockerHub에 push하고 EC2는 pull하여 실행만 담당하는 구조로 변경했습니다.
 
 ---
 
 ### 6. Mac M4 ARM 아키텍처 불일치
 
-**문제 상황**
-- EC2에서 docker pull 시 `no matching manifest for linux/amd64` 에러 발생
+M4 MacBook(ARM)에서 빌드한 이미지가 EC2(x86_64)에서 실행되지 않는 문제였습니다.
 
-**원인**
-- M4 맥북은 ARM(arm64) 아키텍처
-- EC2는 x86_64(amd64) 아키텍처
-- 맥북에서 빌드한 이미지가 ARM용이라 EC2에서 실행 불가
-
-**해결**
 ```bash
 docker buildx build --platform linux/amd64 -t gyunini/writehub --push .
 ```
-
-**배운 점**
-- ARM과 amd64 아키텍처 차이 이해
-- --platform 옵션으로 타겟 아키텍처 지정 가능
-- M1/M2/M3/M4 맥북 사용자는 배포 시 항상 플랫폼 지정 필요
 
 ---
 
 ### 7. GitHub Actions Secret 오기입
 
-**문제 상황**
-- Docker 컨테이너 실행 후 즉시 종료 (Exited (1))
-- `Access denied for user 'gyunini'@'172.31.11.196'` 에러 발생
-
-**원인**
-- GitHub Secrets의 `DB_USERNAME`에 RDS 계정명(`admin`) 대신 DockerHub 계정명(`gyunini`)을 잘못 입력
-
-**해결**
-- GitHub → Settings → Secrets → `DB_USERNAME` 값을 `admin`으로 수정
-
-**배운 점**
-- Secret 이름이 비슷할 때 혼동하기 쉬움 (DOCKERHUB_USERNAME vs DB_USERNAME)
-- 컨테이너가 바로 죽으면 `docker logs [컨테이너명]`으로 원인 확인
+Docker 컨테이너 실행 후 즉시 종료(Exited 1)되며 `Access denied for user 'gyunini'` 에러가 발생했습니다. `DB_USERNAME` Secret에 RDS 계정명(`admin`) 대신 DockerHub 계정명(`gyunini`)을 잘못 입력한 것이 원인이었습니다. `docker logs [컨테이너명]`으로 원인을 확인했습니다.
 
 ---
 
-### 8. deploy.yml tags 한글 오타
+### 8. deploy.yml 한글 오타
 
-**문제 상황**
-- GitHub Actions 빌드 시 `invalid tag "***/writehub:latestㅌ₩": invalid reference format` 에러 발생
-
-**원인**
-- deploy.yml 작성 시 `latest` 뒤에 한글 입력 모드로 인한 오타 삽입
-
-**해결**
-- tags 줄을 완전히 삭제 후 직접 타이핑 (복붙 금지)
-```yaml
-tags: ${{ secrets.DOCKERHUB_USERNAME }}/writehub:latest
-```
-
-**배운 점**
-- yml 파일 작성 시 한/영 전환 주의
-- Secret 값이 마스킹(`***`)되어 표시되므로 오타 확인이 어려움
-- Re-run jobs는 수정된 Secret 값을 반영하지 않음 → 새 커밋 푸시 필요
+`latest` 뒤에 한글 입력 모드로 인한 오타가 삽입되어 `invalid reference format` 에러가 발생했습니다. yml 파일 작성 시 한/영 전환에 주의해야 하며, Secret 값이 마스킹(`***`)되어 표시되므로 오타 확인이 어렵습니다.
 
 ---
 
 ### 9. Docker 컨테이너 application.yml 미적용
 
-**문제 상황**
-- Docker 컨테이너 실행 후 application.yml 설정이 반영되지 않음
-- `docker inspect`로 확인 시 `Mounts: []` (마운트 없음)
+볼륨 마운트 옵션 없이 컨테이너를 실행해 설정 파일이 반영되지 않는 문제였습니다. `-v` 옵션으로 EC2의 application.yml을 컨테이너에 마운트해 해결했습니다.
 
-**원인**
-- `docker run` 명령어에 볼륨 마운트 옵션 없이 실행
-- 컨테이너 내부에 application.yml이 없어 기본값으로 동작
-
-**해결**
-- `-v` 옵션으로 EC2의 application.yml을 컨테이너에 마운트
-- `SPRING_CONFIG_LOCATION`으로 설정 파일 경로 명시
 ```yaml
-# deploy.yml
 docker run -d \
   -p 8080:8080 \
   -v /home/ec2-user/application.yml:/app/application.yml \
@@ -909,217 +338,64 @@ docker run -d \
   gyunini/writehub:latest
 ```
 
-**배운 점**
-- Docker 컨테이너는 호스트 파일에 직접 접근 불가
-- 민감한 설정 파일은 GitHub에 올리지 않고 서버에서 직접 관리
-- `-v` 마운트로 호스트 파일을 컨테이너 내부에 주입 가능
-
 ---
 
 ### 10. CORS 설정 PATCH 메서드 누락
 
-**문제 상황**
-- 프로필 수정 요청(PATCH /api/members/me) 시 403 Forbidden 발생
-- 세션 쿠키도 정상 전달, 백엔드 로그에도 요청이 안 찍힘
+프로필 수정 요청(PATCH)에서 403 Forbidden이 발생했습니다. 백엔드 로그에 요청이 찍히지 않아 Spring 진입 전에 막힌 것을 파악했고, CORS 설정에 PATCH가 누락된 것이 원인이었습니다.
 
-**원인**
-- CorsConfig의 allowedMethods에 PATCH가 누락되어 있었음
-- 브라우저가 CORS preflight(OPTIONS) 요청 시 PATCH 메서드를 허용하지 않아 차단
-
-**해결**
 ```java
-registry.addMapping("/**")
-    .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+.allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
 ```
-
-**배운 점**
-- CORS 설정 시 사용하는 HTTP 메서드를 모두 명시해야 함
-- 403이 떠도 세션/인증 문제가 아닐 수 있음 → CORS 설정도 의심할 것
-- 백엔드 로그에 요청이 안 찍히면 Spring 진입 전에 막힌 것
 
 ---
 
-### 11. @Transactional(readOnly = true) 로 인한 프로필 수정 미반영
+### 11. @Transactional(readOnly = true)로 인한 프로필 수정 미반영
 
-**문제 상황**
-- 프로필 수정 후 새로고침하면 변경사항이 사라짐
-- PATCH 요청은 200 OK 반환, 응답 JSON도 정상
-
-**원인**
-- 클래스 레벨에 @Transactional(readOnly = true) 적용으로 인해
-  updateProfile() 메서드가 읽기 전용 트랜잭션으로 동작
-- JPA 변경감지(Dirty Checking)가 동작하지 않아 DB에 반영되지 않음
-
-**해결**
-- 메서드 레벨에 @Transactional 추가
-- 메서드 레벨이 클래스 레벨보다 우선순위가 높아 쓰기 트랜잭션으로 동작
-```java
-@Transactional
-public MemberResponse updateProfile(Long memberId, MemberUpdateRequest request) {
-```
-
-**배운 점**
-- 클래스 레벨 @Transactional(readOnly = true)는 조회 성능 최적화에 유리하지만
-  쓰기 메서드에는 반드시 메서드 레벨에 @Transactional을 별도로 명시해야 함
-- 응답이 200 OK여도 DB 반영 여부는 별도로 확인 필요
+프로필 수정 후 새로고침하면 변경사항이 사라지는 문제였습니다. 클래스 레벨 `@Transactional(readOnly = true)` 적용으로 쓰기 메서드가 읽기 전용 트랜잭션으로 동작해 JPA 변경감지가 작동하지 않았습니다. 메서드 레벨에 `@Transactional`을 추가해 해결했습니다.
 
 ---
 
-## 🚀 실행 방법
+## 실행 방법
 
-### 로컬 실행 (직접 실행)
+### 로컬 실행
 
-#### 1. MySQL 데이터베이스 생성
-```sql
+```bash
+# 1. MySQL 데이터베이스 생성
 CREATE DATABASE writehub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
 
-#### 2. application.yml 설정
-```bash
+# 2. application.yml 설정
 cp src/main/resources/application-example.yml src/main/resources/application.yml
-# application.yml에 DB 정보 입력
-```
 
-#### 3. 실행
-```bash
+# 3. 실행
 ./gradlew bootRun
 ```
 
----
+### Docker 실행
 
-### Docker로 실행
-
-#### 1. docker-compose.yml 설정
 ```bash
 cp docker-compose-example.yml docker-compose.yml
-# docker-compose.yml에 DB 정보 입력
-```
-
-#### 2. 실행
-```bash
 docker-compose up
 ```
 
-#### ⚠️ M1/M2/M3/M4 맥북 사용자 주의
-```bash
-# EC2 배포 시 반드시 플랫폼 지정
-docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .
-```
+> M1/M2/M3/M4 MacBook 사용자는 EC2 배포 시 반드시 플랫폼을 지정해야 합니다.
+> `docker buildx build --platform linux/amd64 -t [계정명]/writehub --push .`
 
 ---
 
-### Postman으로 API 테스트
-1. `postman/WriteHubAPI.postman_collection.json` 파일을 Postman에 Import
-2. 회원가입 → 로그인 → 게시글 작성 순서로 테스트
+## 향후 개선 계획
 
----
-
-## 📝 완료 현황
-
-- [x] 프로젝트 설계 (ERD, API 명세)
-- [x] 엔티티/Repository 작성 (전체)
-- [x] Member 도메인 (7개 API) → nickname 필드 추가, 프로필 수정 API 포함
-- [x] Post 도메인 (7개 API) → 게시글 검색 API 포함
-- [x] Follow 도메인 (4개 API)
-- [x] Subscription 도메인 (4개 API)
-- [x] Postman Collection 작성
-- [x] API 테스트 완료
-- [x] v1.1 리팩토링 (예외처리, ArgumentResolver, 세션상수화)
-- [x] AWS EC2 + RDS 배포
-- [x] GitHub Actions + Docker 기반 CI/CD 구축
-- [x] Docker 컨테이너화 (Dockerfile, docker-compose)
-- [x] DockerHub 이미지 배포
-- [x] 프론트엔드 연동 (React + Vite)
-- [x] Vercel 배포
-- [x] 게시글 검색 API (Querydsl)
-- [x] N+1 문제 해결 (QueryDSL fetch join + 2단계 페이징) → 03/22
-- [x] 공통 API 응답 포맷 ApiResponse 적용 → 03/23
-- [x] PostService 단위 테스트 작성 → 03/23
-
-**총 22개 API 완성**
-
----
-
-## 🔜 향후 개선 계획
-
-### 단기 v1.1 (완료 ✅)
-
-**1. 전역 예외 처리 (GlobalExceptionHandler)**
-- RuntimeException, ResponseStatusException → 커스텀 예외 계층 구조로 교체
-- CustomException 기반 5가지 예외 클래스 (400/401/403/404/409)
-- GlobalExceptionHandler로 일관된 에러 응답 처리
-
-**2. 인증 체크 중복 제거 (ArgumentResolver)**
-- Controller마다 반복되던 세션 체크 코드 제거
-- @LoginMember 어노테이션으로 memberId 자동 주입
-
-**3. 세션 키 상수화**
-- 매직 스트링 "memberId" → SessionConst.MEMBER_ID 상수로 교체
-- 오타 방지 및 변경 시 단일 수정 포인트 확보
-
----
-
-### 중기 (v1.5)
-
-**1. N+1 문제 최적화 (완료 ✅)**
-- SQL 로그 분석으로 게시글 4개 조회 시 쿼리 10개 발생 확인
-- default_batch_fetch_size 설정이 명시적 JPQL 쿼리 구조에서 효과 없음을 확인
-- Post 엔티티에 @OneToMany 양방향 매핑 추가 후 QueryDSL fetch join 적용
-- 2단계 페이징(ID 먼저 조회 → fetch join) 방식으로 페이지네이션 + fetch join 문제 해결
-- getPosts, getPostsByAuthor, searchPosts 3개 API 모두 쿼리 N+1개 → 2개로 감소
-
-**2. 조회수 시스템 개선**
-- Redis + 스케줄러 배치 처리
-- IP/User 기반 중복 체크 (24시간)
-
-**3. 검색 API 추가** (완료 ✅ 03/08)
-- GET /api/posts?keyword=검색어 (제목/내용/태그)
-
-**4. 프로필 수정 API 추가** (완료 ✅ 03/09)
-- PATCH /api/members/me (username, bio)
-
-**5. 공통 API 응답 포맷 통일 (완료 ✅ 03/23)**
-- 모든 Controller 응답을 ApiResponse<T>로 통일
-- success / message / data 구조로 일관된 응답 포맷 확보
-- GlobalExceptionHandler 에러 응답도 ApiResponse.error()로 통일
-
-**6. 단위 테스트 작성 (진행 중)**
-- PostService 구독자 전용 게시글 접근 제어 테스트 작성
-- Mockito 기반 Mock 객체 활용, ReflectionTestUtils로 private 필드 주입
-- 향후 주요 비즈니스 로직 전반으로 테스트 커버리지 확대 예정
-
----
-
-### 장기 (v2.0)
-
-**1. Spring Security + JWT**
-- Stateless 인증으로 전환
-- Refresh Token 발급
-- Redis를 이용한 토큰 관리
-
-**2. 성능 최적화**
-- Redis 캐싱 (프로필 통계, 조회수)
-- DB 인덱싱 최적화
-
-**3. 추가 기능**
+- Spring Security + JWT 인증 전환 (Stateless, Refresh Token, Redis 토큰 관리)
+- Redis 캐싱 도입 (조회수 배치 처리, 프로필 통계)
+- Nginx 리버스 프록시 + Blue/Green 무중단 배포
 - 좋아요, 댓글 기능
-- PG 결제 연동 (유료 구독)
-- Spring Batch를 이용한 정산 시스템
-- 알림 기능 (SSE 또는 WebSocket)
+- PG 결제 연동 (유료 구독) + Spring Batch 정산 시스템
 
 ---
 
-## 📚 참고 자료
-
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
-- [김영한님 - 스프링 강의](https://www.inflearn.com/users/@yh)
-
----
-
-## 👤 개발자
+## 개발자
 
 **임동균**
-- 경일대학교 컴퓨터사이언스학부 클라우드컴퓨팅 전공 (GPA 4.37/4.5)
+- 경일대학교 컴퓨터사이언스학부 (GPA 4.37/4.5)
 - Email: sfeagle130@naver.com
 - GitHub: https://github.com/Dong-gyun-lim
