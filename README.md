@@ -197,9 +197,9 @@ JPA 쓰기 지연(write-behind) 특성으로 DELETE/INSERT 순서가 보장되�
 
 ```java
 if (!currentTagSet.equals(newTagSet)) {
-    postTagRepository.deleteByPostId(postId);
+        postTagRepository.deleteByPostId(postId);
     postTagRepository.flush();  // 즉시 DELETE 실행
-    saveTags(post, newTags);
+saveTags(post, newTags);
 }
 ```
 
@@ -255,7 +255,177 @@ v1.0 완료 후 세션에서 memberId를 꺼내는 코드가 모든 Controller�
 
 ---
 
-## 트러블슈팅
+## 개발 중 발견한 버그와 해결
+
+### 1. 게시글 수정 시 태그 반환값 오류
+
+**문제**: 태그를 수정하지 않았는데 응답에서 태그가 사라지는 문제가 발생했습니다.
+
+**원인**:
+```java
+List<String> newTags = request.getTags() != null ? request.getTags() : List.of();
+return new PostResponse(post, newTags);  // 빈 리스트 반환!
+```
+
+**해결**:
+```java
+return new PostResponse(post,
+    currentTagSet.equals(newTagSet) ? currentTags : newTags);
+```
+
+**배운 점**: `null` = "수정 안 함" vs `[]` = "전부 삭제"를 명확히 구분해야 합니다.
+
+---
+
+### 2. 태그 순서 변경 시 불필요한 재생성
+
+**문제**: `["Spring", "Java"]` → `["Java", "Spring"]`처럼 순서만 바뀌어도 삭제/재생성이 실행됐습니다.
+
+**해결**: List 비교 대신 Set 비교로 순서를 무시하도록 변경했습니다.
+```java
+Set<String> currentTagSet = new HashSet<>(currentTags);
+Set<String> newTagSet = new HashSet<>(newTags);
+```
+
+**배운 점**: 비즈니스 요구사항에 맞는 자료구조 선택이 중요합니다.
+
+---
+
+### 3. Validation 설정 오류
+
+**문제**: 회원가입 시 계속 400 Bad Request가 발생했습니다.
+
+**원인**:
+```java
+@Size(min = 50, max = 50)  // 오타! 최소 50자를 요구
+private String username;
+```
+
+**해결**:
+```java
+@Size(max = 50)
+@NotBlank
+private String username;
+```
+
+**배운 점**: Validation 어노테이션 설정 시 비즈니스 요구사항을 반드시 확인해야 합니다.
+
+---
+
+### 4. JPA Auditing 미활성화
+
+**문제**: `createdAt`, `updatedAt`이 null로 저장됐습니다.
+
+**원인**: `@EnableJpaAuditing` 설정 누락
+
+**해결**:
+```java
+@EnableJpaAuditing
+@SpringBootApplication
+public class WritehubApplication { }
+```
+
+**배운 점**: BaseTimeEntity 작성만으로는 부족하고 명시적 활성화가 필요합니다.
+
+---
+
+### 5. 조회수 증가 시 updatedAt 변경
+
+**문제**: 게시글 조회 시 조회수 증가로 인해 `updatedAt`도 함께 변경됐습니다.
+
+**원인**: JPA 변경 감지로 UPDATE 쿼리가 실행되어 `@LastModifiedDate`가 자동 갱신됐습니다.
+
+**향후 개선**:
+```java
+@Modifying
+@Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
+void incrementViewCount(@Param("postId") Long postId);
+```
+
+---
+
+### 6. 본인 게시글 조회 시 조회수 증가
+
+**문제**: 작성자가 본인 글을 여러 번 확인하면 조회수가 계속 올라가는 문제가 있었습니다.
+
+**해결**:
+```java
+if (viewerId == null || !post.getAuthor().getId().equals(viewerId)) {
+    post.increaseViewCount();
+}
+```
+
+---
+
+### 7. 게시글 수정 시 태그 중복 키 에러
+
+**문제**: 게시글 수정 시 `Duplicate entry` 에러가 발생했습니다.
+
+**원인**: JPA 쓰기 지연으로 DELETE/INSERT 순서가 보장되지 않아 INSERT가 먼저 실행되면 기존 데이터와 충돌했습니다.
+
+**해결**:
+```java
+postTagRepository.deleteByPostId(postId);
+postTagRepository.flush();  // 즉시 DELETE 실행
+saveTags(post, newTags);
+```
+
+**배운 점**: JPA 쓰기 지연(write-behind) 특성을 이해하고 `flush()`로 실행 순서를 제어해야 합니다.
+
+---
+
+### 8. 게시글 삭제 시 외래 키 제약 조건 에러
+
+**문제**: 게시글 삭제 시 `Cannot delete or update a parent row: a foreign key constraint fails` 에러가 발생했습니다.
+
+**원인**: PostTag가 Post를 참조하고 있는데 Post를 먼저 삭제하려 해서 실패했습니다.
+
+**해결**: Service Layer에서 삭제 순서를 명시적으로 관리했습니다.
+```java
+postTagRepository.deleteByPostId(postId);  // 1. 자식 먼저 삭제
+postRepository.delete(post);               // 2. 부모 삭제
+```
+
+**배운 점**: 외래 키 관계에서 삭제 순서가 중요하며, CASCADE 대신 Service에서 명시적으로 처리하면 삭제 로직이 명확해집니다.
+
+---
+
+### 9. 파라미터 순서 실수
+
+**문제**: 비슷한 타입(Long)의 파라미터 순서를 잘못 전달해 런타임 에러가 발생했습니다.
+
+```java
+// 잘못된 호출
+postService.deletePost(authorId, postId);  // 순서 반대!
+
+// 올바른 호출
+postService.deletePost(postId, authorId);
+```
+
+**배운 점**: 파라미터가 3개 이상이면 DTO로 래핑하는 것을 고려해야 합니다. 단위 테스트의 중요성을 체감했습니다.
+
+---
+
+### 10. 자기 자신 언팔로우 / 구독 취소 방지 누락
+
+**문제**: 팔로우에는 자기 자신 방지 로직이 있었으나 언팔로우에는 누락되었고, 구독도 동일한 문제가 있었습니다.
+
+**해결**:
+```java
+if (followerId.equals(followingId)) {
+    throw new BadRequestException("자기 자신은 언팔로우할 수 없습니다");
+}
+
+if (subscriberId.equals(creatorId)) {
+    throw new BadRequestException("자기 자신은 구독 취소할 수 없습니다");
+}
+```
+
+**배운 점**: 구독/구독취소, 팔로우/언팔로우처럼 대칭되는 기능은 항상 같은 검증 로직이 적용되는지 확인해야 합니다.
+
+---
+
+## 배포 트러블슈팅
 
 ### 1. SSH 접속 무한 대기 (Hang) 현상
 
@@ -263,6 +433,12 @@ v1.0 완료 후 세션에서 memberId를 꺼내는 코드가 모든 Controller�
 
 ```bash
 ssh -i ~/.ssh/writehub-server.pem -o IPQoS=none ec2-user@[EC2_IP]
+```
+
+**영구 적용**:
+```bash
+echo "Host *" >> ~/.ssh/config
+echo "  IPQoS none" >> ~/.ssh/config
 ```
 
 ---
@@ -275,6 +451,8 @@ EC2에서 `./gradlew bootJar` 실행 시 `Toolchain installation does not provid
 sudo dnf install java-21-amazon-corretto-devel -y
 ```
 
+**배운 점**: JRE(실행)와 JDK(컴파일)의 차이를 이해해야 합니다.
+
 ---
 
 ### 3. Unknown database 'writehub' 에러
@@ -285,13 +463,16 @@ RDS는 MySQL 서버(인스턴스)를 생성하지만 실제 사용할 데이터�
 CREATE DATABASE writehub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
+**배운 점**: RDS 생성 ≠ 데이터베이스 생성. MySQL 서버와 데이터베이스(스키마)는 별개의 개념입니다.
+
 ---
 
 ### 4. Spring Boot 틸드(~) 경로 인식 불가
 
-`~`는 bash 쉘에서만 `/home/ec2-user`로 변환됩니다. Spring Boot는 쉘이 아니기 때문에 `~`를 문자 그대로 인식합니다. 절대 경로로 변경해 해결했습니다.
+`~`는 bash 쉘에서만 `/home/ec2-user`로 변환됩니다. Spring Boot는 쉘이 아니기 때문에 `~`를 문자 그대로 인식합니다.
 
 ```bash
+# 틸드 대신 절대 경로 사용
 --spring.config.location=file:/home/ec2-user/application.yml
 ```
 
@@ -300,6 +481,8 @@ CREATE DATABASE writehub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ### 5. GitHub Actions 빌드 타임아웃
 
 t3.micro(1GB RAM)에서 Gradle 빌드 시 메모리 부족으로 13분 이상 소요되며 SSH 연결이 끊기는 문제였습니다. GitHub Actions에서 빌드 후 Docker 이미지를 DockerHub에 push하고 EC2는 pull하여 실행만 담당하는 구조로 변경했습니다.
+
+**결과**: 배포 시간 13분 이상 → 1~2분으로 단축
 
 ---
 
@@ -311,17 +494,23 @@ M4 MacBook(ARM)에서 빌드한 이미지가 EC2(x86_64)에서 실행되지 않�
 docker buildx build --platform linux/amd64 -t gyunini/writehub --push .
 ```
 
+**배운 점**: M1/M2/M3/M4 MacBook 사용자는 배포 시 항상 플랫폼을 지정해야 합니다.
+
 ---
 
 ### 7. GitHub Actions Secret 오기입
 
-Docker 컨테이너 실행 후 즉시 종료(Exited 1)되며 `Access denied for user 'gyunini'` 에러가 발생했습니다. `DB_USERNAME` Secret에 RDS 계정명(`admin`) 대신 DockerHub 계정명(`gyunini`)을 잘못 입력한 것이 원인이었습니다. `docker logs [컨테이너명]`으로 원인을 확인했습니다.
+Docker 컨테이너 실행 후 즉시 종료(Exited 1)되며 `Access denied for user 'gyunini'` 에러가 발생했습니다. `DB_USERNAME` Secret에 RDS 계정명(`admin`) 대신 DockerHub 계정명(`gyunini`)을 잘못 입력한 것이 원인이었습니다.
+
+**배운 점**: Secret 이름이 비슷할 때 혼동하기 쉽습니다. 컨테이너가 바로 죽으면 `docker logs [컨테이너명]`으로 원인을 확인해야 합니다.
 
 ---
 
 ### 8. deploy.yml 한글 오타
 
-`latest` 뒤에 한글 입력 모드로 인한 오타가 삽입되어 `invalid reference format` 에러가 발생했습니다. yml 파일 작성 시 한/영 전환에 주의해야 하며, Secret 값이 마스킹(`***`)되어 표시되므로 오타 확인이 어렵습니다.
+`latest` 뒤에 한글 입력 모드로 인한 오타가 삽입되어 `invalid reference format` 에러가 발생했습니다.
+
+**배운 점**: yml 파일 작성 시 한/영 전환에 주의해야 합니다. Secret 값이 마스킹(`***`)되어 표시되므로 오타 확인이 어렵고, Re-run jobs는 수정된 Secret 값을 반영하지 않아 새 커밋을 푸시해야 합니다.
 
 ---
 
@@ -338,6 +527,8 @@ docker run -d \
   gyunini/writehub:latest
 ```
 
+**배운 점**: Docker 컨테이너는 호스트 파일에 직접 접근 불가합니다. 민감한 설정 파일은 GitHub에 올리지 않고 서버에서 직접 관리해야 합니다.
+
 ---
 
 ### 10. CORS 설정 PATCH 메서드 누락
@@ -348,11 +539,20 @@ docker run -d \
 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
 ```
 
+**배운 점**: 403이 떠도 세션/인증 문제가 아닐 수 있습니다. 백엔드 로그에 요청이 안 찍히면 Spring 진입 전에 막힌 것이므로 CORS 설정을 의심해야 합니다.
+
 ---
 
 ### 11. @Transactional(readOnly = true)로 인한 프로필 수정 미반영
 
-프로필 수정 후 새로고침하면 변경사항이 사라지는 문제였습니다. 클래스 레벨 `@Transactional(readOnly = true)` 적용으로 쓰기 메서드가 읽기 전용 트랜잭션으로 동작해 JPA 변경감지가 작동하지 않았습니다. 메서드 레벨에 `@Transactional`을 추가해 해결했습니다.
+프로필 수정 후 새로고침하면 변경사항이 사라지는 문제였습니다. 클래스 레벨 `@Transactional(readOnly = true)` 적용으로 쓰기 메서드가 읽기 전용 트랜잭션으로 동작해 JPA 변경감지가 작동하지 않았습니다.
+
+```java
+@Transactional  // 메서드 레벨에 추가
+public MemberResponse updateProfile(Long memberId, MemberUpdateRequest request) { }
+```
+
+**배운 점**: 클래스 레벨 `@Transactional(readOnly = true)`는 조회 성능 최적화에 유리하지만 쓰기 메서드에는 반드시 메서드 레벨에 `@Transactional`을 별도로 명시해야 합니다.
 
 ---
 
@@ -396,6 +596,6 @@ docker-compose up
 ## 개발자
 
 **임동균**
-- 경일대학교 컴퓨터사이언스학부 (GPA 4.37/4.5)
+- 경일대학교 컴퓨터사이언스학부 클라우드컴퓨팅 전공 (GPA 4.37/4.5)
 - Email: sfeagle130@naver.com
 - GitHub: https://github.com/Dong-gyun-lim
